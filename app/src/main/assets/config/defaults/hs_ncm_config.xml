@@ -1,0 +1,73 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<ncm-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns = "http://www.hellosoft.com/ncm-config.xsd">
+   
+    <!-- ncm config contains list of adapter elements -->
+    <!-- adapter element contains all elements related to an adapter information
+         The 'type' attribute specifies type of adapter
+         example: wlan, WIMAX, cell, cell-data, HSPA, PPP, BT, IKE, LTE -->
+
+    <!-- The elements like ss(signal strength), snr, ber, ecio contains entry, scan,
+         exit, return limits as attributes -->
+
+    <!-- The element if-name-list contains adapter names separated by comma.
+         The names which are matched here will be treated as corresponding
+         adapter type -->
+
+    <!-- management element is optional. It contains sub elements like
+         auto-handoff, manage-opt etc-->
+   
+    <adapter type = "wlan">
+        <ss entry = "70" return = "60" scan = "50" exit = "30"/>
+        <snr entry = "35" return = "30" scan = "25" exit = "20"/>
+        <management>
+            <auto-handoff>0</auto-handoff>
+            <manage-opt>1</manage-opt>
+            <auto-select-if>1</auto-select-if>
+            <if-name>eth0</if-name>
+            <scan-list-view>3</scan-list-view>
+            <enterprise-profile-name>HS</enterprise-profile-name>
+        </management>
+        <if-name-list>wifi,wi-fi,wireless,80211,802.11,TNET,NPME\JEDI11,ar6k_sd1,GCTLTE1,L50LTE1,10,wlan,wlan0,wlan0:0,tiwlan0,eth0</if-name-list>
+    </adapter>
+
+    <adapter type = "wimax">
+        <ss entry = "40" return = "30" scan = "20" exit = "10"/>
+        <snr entry = "35" return = "30" scan = "25" exit = "20"/>
+        <if-name-list>wimax,wibro</if-name-list>
+    </adapter>
+
+    <adapter type = "cell">
+        <ss entry = "40" return = "30" scan = "20" exit = "10"/>
+        <ber entry = "4" return = "5" scan = "6" exit = "7"/>
+        <ecio entry = "1" return = "3" scan = "5" exit = "7"/>
+    </adapter>
+
+    <adapter type = "cell-data">
+        <ss entry = "40" return = "30" scan = "20" exit = "10"/>
+        <snr entry = "4" return = "3" scan = "2" exit = "1"/>
+        <ecio entry = "1" return = "3" scan = "5" exit = "7"/>
+        <if-name-list>edge,gprs,cdma,dvdo,ev-do,ev-dv,cell,rmnet0</if-name-list>
+    </adapter>
+
+    <adapter type = "hspa">
+        <if-name-list>hspa,hsdpa,hsupa</if-name-list>
+    </adapter>
+
+    <adapter type = "ppp">
+        <if-name-list>ppp</if-name-list>
+    </adapter>
+
+    <adapter type = "bt">
+        <if-name-list>bluetooth</if-name-list>
+    </adapter>
+
+    <adapter type = "ike">
+        <if-name-list>safenet,safe-net</if-name-list>
+    </adapter>
+
+    <adapter type = "lte">
+        <if-name-list>GCTLTE1,L50LTE1</if-name-list>
+    </adapter>
+</ncm-config>
+

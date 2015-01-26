@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/header"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="45dp"
+    android:background="@drawable/navigation_drawer_header_selector"
+    >
+
+    <ImageView
+        android:id="@+id/selectionMark"
+        android:layout_width="10dp"
+        android:layout_height="match_parent"
+        android:src="@drawable/lime_green_background"
+        android:layout_alignParentLeft="true"
+        android:visibility="invisible"
+        />
+
+    <TextView
+        android:layout_toRightOf="@+id/selectionMark"
+        android:id="@+id/navigationDrawerItemText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/my_device"
+        android:paddingLeft="30dp"
+        android:paddingRight="10dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:textSize="@dimen/subtitle_text_size"
+        android:textColor="@color/gray"
+        android:layout_centerVertical="true"
+        />
+
+    <ImageView
+        android:id="@+id/deviceStatusImage"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_marginRight="10dp"
+        android:src="@drawable/device_in_softap_mode"
+        android:layout_alignParentRight="true"
+        android:padding="8dp"
+        android:background="@drawable/purple_oval_shape"
+        android:layout_centerVertical="true"
+        />
+
+</RelativeLayout>

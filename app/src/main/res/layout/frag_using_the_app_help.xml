@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+    >
+    <LinearLayout style="@style/HobbyistHelpFragmentStyle">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/wifire_board"
+            android:textSize="@dimen/help_information_subtitle_text_size"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/your_wifire_board_communicates"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/note_about_interacting_with_board"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/you_can_confirm_your_wifire_board"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/selecting_wifire_board_to_interact_with"
+            android:textSize="@dimen/help_information_subtitle_text_size"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/what_connected_devices_screen_displays"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/to_interact_with_board"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/tap_menu_button"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="2dp"
+            android:layout_marginLeft="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/tap_connected_devices"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="2dp"
+            android:layout_marginLeft="10dp"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/select_your_wifire_from_the_list"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="2dp"
+            android:layout_marginLeft="10dp"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/interact_with_selected"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="2dp"
+            android:layout_marginLeft="10dp"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/running_test_to_confirm"
+            android:textSize="@dimen/help_information_subtitle_text_size"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/carry_out_of_the_following_check"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="10dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/enter_or_select_command"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="2dp"
+            android:layout_marginLeft="10dp"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/tap_send"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="2dp"
+            android:layout_marginLeft="10dp"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="@string/check_the_output"
+            android:textSize="@dimen/help_information_text_size"
+            android:layout_marginBottom="2dp"
+            android:layout_marginLeft="10dp"
+            />
+
+    </LinearLayout>
+</ScrollView>

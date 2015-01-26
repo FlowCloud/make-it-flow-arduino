@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/HobbyistFragmentStyle"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <ImageView
+        android:id="@+id/dots"
+        style="@style/Dots"
+        android:src="@drawable/dots_2"
+        />
+
+    <com.imgtec.hobbyist.views.GifWebView
+        android:id="@+id/gifWebView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.7"
+        android:scrollbars="none"
+        app:path="file:///android_asset/buttons_press_animation.gif"
+        />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/setup_mode_text"
+        style="@style/SetupGuideTextCentered"
+        android:layout_weight="0.3"
+        />
+
+    <Button
+        android:id="@+id/continueButton"
+        android:layout_height="@dimen/button_height"
+        android:layout_width="match_parent"
+        android:textColor="@android:color/white"
+        android:singleLine="true"
+        android:text="@string/continue_button"
+        android:background="@drawable/green_button_selector"
+        />
+
+</LinearLayout>

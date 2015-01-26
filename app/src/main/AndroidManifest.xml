@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.imgtec.hobbyist">
+
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.WAKE_LOCK"/>
+  <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+  <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+
+  <application
+      android:allowBackup="true"
+      android:icon="@drawable/ic_launcher"
+      android:label="@string/app_name"
+      android:theme="@style/HobbyistNoActionBarTheme">
+    <activity
+        android:name=".activities.TourActivity"
+        android:screenOrientation="sensorPortrait"
+        android:theme="@style/HobbyistActionBarTheme">
+    </activity>
+    <activity
+        android:name=".activities.StartApplicationActivity"
+        android:screenOrientation="sensorPortrait"
+        android:theme="@android:style/Theme.NoDisplay">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+    <activity
+        android:name=".activities.LogInToFlowActivity"
+        android:label="@string/log_in_button_text"
+        android:screenOrientation="sensorPortrait"
+        android:theme="@style/HobbyistActionBarTheme"
+        android:windowSoftInputMode="adjustPan">
+    </activity>
+
+    <service
+        android:name="com.octo.android.robospice.XmlSpringAndroidSpiceService"
+        android:exported="false"/>
+
+    <activity
+        android:name=".activities.FlowActivity"
+        android:label="@string/title_activity_flow"
+        android:screenOrientation="sensorPortrait"
+        android:theme="@style/HobbyistActionBarTheme"
+        android:windowSoftInputMode="adjustPan">
+    </activity>
+    <activity android:name="net.hockeyapp.android.UpdateActivity"/>
+    <activity
+        android:name=".activities.SearchUsersActivity"
+        android:label="@string/title_activity_search_users"
+        android:screenOrientation="sensorPortrait"
+        android:theme="@style/Theme.Base.Light">
+    </activity>
+  </application>
+
+</manifest>

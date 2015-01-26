@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<imps_config xmlns = "http://www.hellosoft.com/imps">
+<!-- IMPS configuration file -->
+<advance_setting>
+
+   <server_type>3</server_type><!-- valid server types are 1, 2 and 3 -->
+
+   <pidf_pres>1</pidf_pres><!-- value should be 0 or 1 -->
+
+   <pidf_namespace>urn:ietf:params:xml:ns:cpim-pidf</pidf_namespace><!-- value should be 0 or 1 -->
+
+   <enable_rls>1</enable_rls><!-- value should be 0 or 1 -->
+
+   <notify_filter>1</notify_filter><!-- value should be 0 or 1 -->
+
+   <max_resources>500</max_resources><!-- value should be non-negative integer -->
+
+   <max_presence_enabled_resources>40</max_presence_enabled_resources><!-- value should be non-negative integer -->
+
+   <local_copy>0</local_copy><!-- value should be 0 or 1 -->
+
+   <xcap_partial_node_upload>0</xcap_partial_node_upload><!-- value should be non-negative integer -->
+
+   <xcap_cache_size>500</xcap_cache_size><!-- value should be non-negative integer -->
+
+   <xcap_cache_enable>1</xcap_cache_enable><!-- value should be 0 or 1 -->
+
+</advance_setting>
+
+<server_setting>
+
+<!-- value of the server address should be valid domain name or valid IP address and if port number is entered then it should be valid -->
+
+   <default_server>https://90.90.90.220:5061</default_server>
+
+   <resourcelist>https://90.90.90.220:5061</resourcelist>
+
+   <presrules>https://90.90.90.220:5061</presrules>
+
+   <profiles>https://90.90.90.220:5061</profiles>
+
+   <groups>https://90.90.90.220:5061</groups>
+
+   <directory>https://90.90.90.220:5061</directory>
+
+   <rls_server>sip://90.90.90.220:5060</rls_server>
+
+   <xdm_subscription>https://90.90.90.220:5061</xdm_subscription>
+
+   <rls-services>https://90.90.90.220:5061</rls-services>
+
+   <filetransfer>https://90.90.90.220/IMS/filetransfer:80</filetransfer>
+
+   <ldap_search_server>https://www.pst.hellosoft.com:80</ldap_search_server> <!-- TODO -->
+
+   <xcap_search_server>https://www.pst.hellosoft.com:80</xcap_search_server> <!-- TODO -->
+
+   <images_server>https://90.90.90.220/IMS/xcap-images/users:80</images_server> 
+</server_setting>
+
+
+
+<xcap>
+
+  <resource_uri>/xcap-root/resource-lists/users/%s/resource-list.xml</resource_uri>
+
+<presrule_uri>/xcap-root/pres-rules/users/%s/pres-rules.xml</presrule_uri>
+
+<profile_uri>/xcap-root/org.openmobilealliance.user-profile/users/%s/profile.xml</profile_uri>
+
+<directory_uri>/xcap-root/directory/users/%s/directory.xml</directory_uri>
+
+   <groups_uri>/xcap-root/group/users/%s/group.xml</groups_uri>
+
+   <resource_auid>resource-lists</resource_auid>
+
+   <presrule_auid>pres-rules</presrule_auid>
+
+   <profile_auid>profile</profile_auid>
+
+   <directory_auid>directory</directory_auid>
+
+   <groups_auid>group</groups_auid>
+
+   <xcap_search_uri>..</xcap_search_uri> <!-- TODO -->
+
+   <xcap_search_result>..</xcap_search_result> <!-- TODO -->
+
+</xcap>
+
+</imps_config>

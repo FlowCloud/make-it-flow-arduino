@@ -1,0 +1,67 @@
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              style="@style/HobbyistFragmentStyle"
+    >
+
+    <EditText
+        style="@style/RoundedEditText"
+        android:id="@+id/username"
+        android:digits="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        android:textColorHint="@color/gray"
+        android:hint="@string/username"
+        android:layout_marginBottom="10dp"
+        />
+
+    <EditText
+        style="@style/RoundedEditText"
+        android:id="@+id/emailAddress"
+        android:inputType="textEmailAddress"
+        android:textColorHint="@color/gray"
+        android:hint="@string/email_address"
+        android:layout_marginBottom="10dp"
+        />
+
+    <EditText
+        style="@style/RoundedEditText"
+        android:id="@+id/password"
+        android:inputType="textPassword"
+        android:textColorHint="@color/gray"
+        android:hint="@string/password"
+        android:layout_marginBottom="25dp"
+        />
+
+    <Button
+        android:id="@+id/signUp"
+        android:layout_height="@dimen/button_height"
+        android:layout_width="match_parent"
+        android:textColor="@android:color/white"
+        android:singleLine="true"
+        android:text="@string/sign_up_button_text"
+        android:enabled="false"
+        android:background="@drawable/purple_button_selector"
+        />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="?android:attr/progressBarStyle"
+        android:indeterminate="true"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        />
+
+</LinearLayout>

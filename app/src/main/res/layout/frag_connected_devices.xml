@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    >
+
+    <LinearLayout
+        android:id="@+id/devicesLayout"
+        style="@style/HobbyistFragmentStyle"
+        android:visibility="gone"
+        android:orientation="vertical"
+        >
+
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/swipeLayout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ListView
+                android:id="@+id/deviceListView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginBottom="10dp"
+                android:divider="@null"
+                android:dividerHeight="0dp"
+                android:padding="1dp"
+                android:background="@drawable/stroke_shape_with_gray_background"
+                >
+            </ListView>
+
+        </android.support.v4.widget.SwipeRefreshLayout>
+
+        <Button
+            android:id="@+id/interactWithSelected"
+            android:layout_height="@dimen/button_height"
+            android:layout_width="match_parent"
+            android:layout_marginTop="10dp"
+            android:textColor="@android:color/white"
+            android:singleLine="true"
+            android:text="@string/interact_with_selected_button_text"
+            android:background="@drawable/green_and_grey_button_selector"
+            android:enabled="false"
+            />
+
+    </LinearLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/emptyLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="@dimen/navigation_drawer_fragment_layout_margin"
+        android:visibility="gone"
+        >
+
+        <ImageView
+            android:id="@+id/noConnectedDevices"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/no_connected_devices_height"
+            android:src="@drawable/no_connected_devices"
+            />
+
+        <TextView
+            android:id="@+id/subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/no_devices_message"
+            android:textSize="@dimen/small_label_text_size"
+            android:textColor="@color/nice_gray"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:gravity="center"
+            android:layout_below="@+id/noConnectedDevices"
+            />
+
+        <Button
+            android:id="@+id/connectYourDevice"
+            android:layout_height="@dimen/button_height"
+            android:layout_width="match_parent"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            android:textColor="@android:color/white"
+            android:singleLine="true"
+            android:text="@string/setup_device_button_text"
+            android:background="@drawable/green_button_selector"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginLeft="25dp"
+            android:layout_marginRight="25dp"
+            />
+
+    </RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        />
+
+</FrameLayout>

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/devicesLayout"
+    style="@style/HobbyistFragmentStyle"
+    android:orientation="vertical"
+    >
+
+    <ImageView
+        android:id="@+id/dots"
+        style="@style/Dots"
+        android:src="@drawable/dots_5"
+        />
+
+  <ImageView
+      android:id="@+id/ledsAnimation"
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:padding="18dp"
+      android:layout_marginTop="50dp"
+      android:layout_marginBottom="20dp"
+      />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        >
+
+        <TextView
+            android:id="@+id/connectionFailed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/device_setup_failed"
+            android:textSize="@dimen/connecting_text_size"
+            android:gravity="center"
+            android:enabled="false"
+            android:visibility="gone"
+            tools:visibility="visible"
+            />
+
+        <TextView
+            android:id="@+id/connecting"
+            android:gravity="center"
+            android:layout_below="@id/connectionFailed"
+            style="@style/ConnectingTextView"
+            android:text="@string/connecting_to"
+            android:textColor="@color/nice_gray"
+            android:enabled="false"
+            />
+
+      <TextView
+          android:id="@+id/takingLong"
+          android:layout_below="@id/connecting"
+          style="@style/ConnectingTextView"
+          android:text="@string/taking_long"
+          android:textColor="@color/nice_gray"
+          android:gravity="center"
+          android:enabled="false"
+          android:visibility="gone"
+          />
+
+      <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_above="@+id/troubleshooting"
+            >
+
+            <Button
+                android:id="@+id/cancelButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/gray_button_selector"
+                android:text="@string/cancel"
+                android:layout_gravity="center_vertical"
+                android:textColor="@android:color/white"
+                android:layout_margin="5dp"
+
+                />
+
+            <Button
+                android:id="@+id/tryAgainButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/green_button_selector"
+                android:text="@string/retry_setup"
+                android:textColor="@android:color/white"
+                android:layout_margin="5dp"
+
+                />
+
+        </LinearLayout>
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal"
+          android:id="@+id/doneButtonContainer"
+          android:layout_alignParentBottom="true"
+          >
+
+        <Button
+            android:id="@+id/doneButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/green_button_selector"
+            android:text="@string/done"
+            android:textColor="@android:color/white"
+            android:layout_margin="5dp"
+            android:visibility="invisible"
+            />
+
+      </LinearLayout>
+
+      <TextView
+          android:layout_alignParentBottom="true"
+          android:id="@id/troubleshooting"
+          style="@style/Link"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:gravity="center"
+          android:text="@string/troubleshooting"
+          android:layout_margin="5dp"
+          android:visibility="visible"
+          />
+
+    </RelativeLayout>
+
+</LinearLayout>

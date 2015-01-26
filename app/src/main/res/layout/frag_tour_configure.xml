@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingTop="25dp"
+    >
+
+    <TextView
+        android:id="@+id/makeItFlow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/make_it_flow"
+        android:textSize="@dimen/title_text_size"
+        android:padding="10dp"
+        android:textStyle="bold"
+        android:layout_centerHorizontal="true"
+        />
+
+    <TextView
+        android:id="@+id/configureText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/configure_your_device"
+        android:textSize="@dimen/label_text_size"
+        android:padding="10dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/makeItFlow"
+        />
+
+    <RelativeLayout
+        android:id="@+id/middleLayout"
+        android:layout_below="@+id/configureText"
+        android:layout_above="@+id/skipTourButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="15dp"
+        android:clipToPadding="false"
+        >
+
+        <ImageView
+            android:id="@+id/circles"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/tour_circles"
+            android:layout_centerInParent="true"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentTop="true"
+            />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/tour_circuit"
+            android:layout_toLeftOf="@+id/circles"
+            android:layout_marginLeft="-60dp"
+            android:layout_centerInParent="true"
+            />
+
+        <ImageView
+            android:id="@+id/phone"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/tour_configure_phone"
+            android:layout_toRightOf="@id/circles"
+            android:layout_marginRight="-20dp"
+            android:layout_centerInParent="true"
+            android:padding="5dp"
+            />
+
+    </RelativeLayout>
+
+    <Button
+        android:id="@+id/skipTourButton"
+        android:layout_height="@dimen/button_height"
+        android:layout_width="match_parent"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="50dp"
+        android:textColor="@android:color/white"
+        android:singleLine="true"
+        android:text="@string/skip_tour_and_get_started_button_text"
+        android:background="@drawable/green_button_selector"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="25dp"
+        android:layout_marginRight="25dp"
+        />
+
+
+</RelativeLayout>

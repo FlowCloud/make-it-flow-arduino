@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="@dimen/navigation_drawer_fragment_layout_margin"
+    android:layout_marginBottom="@dimen/navigation_drawer_fragment_layout_margin"
+    android:paddingLeft="25dp"
+    android:paddingRight="25dp"
+    >
+
+    <ImageView
+        android:id="@+id/dots"
+        style="@style/Dots"
+        android:src="@drawable/dots_3"
+        />
+
+    <TextView
+        android:id="@+id/selectBoard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:text="@string/choose_board"
+        style="@style/SetupGuideTextCentered"
+        android:layout_below="@+id/dots"
+        />
+
+    <ListView
+        android:id="@+id/wifiSSIDs"
+        android:layout_below="@id/selectBoard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="10dp"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:background="@drawable/stroke_shape_with_gray_background"
+        android:padding="1dp"
+        />
+
+</RelativeLayout>

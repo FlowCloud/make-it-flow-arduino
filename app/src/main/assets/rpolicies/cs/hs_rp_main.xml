@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scxml version="1.0" xmlns="http://www.w3.org/2005/07/scxml"
+  xmlns:hs="www.hellosoft.com/radio_policy" name="mainradio"
+  initialstate="FFF">
+
+  <!-- states of radio 
+       F => Radio is OFF, with no timer running to turn it ON/OFF.
+       S => started (timedoff/vtimedoff/searching/connected/turn-on in-progress)
+  -->
+
+
+  <!-- Generic comments -->
+  <!-- event="not_required" - Not handled here, as handled in Radio State Machine.
+     Radio State Machine will post "movedto_off" main state machine, after handling it  -->
+  <!-- In CS-Preferred mode, the radio priority order is - Cellular, WiFi, and WiMax. -->
+  <!-- No action on Low-Battery & Normal-Battery, as CS is always the highest priority radio. -->
+
+  <state id="FFF">
+    <transition event="startup">
+      <!-- Turn ON the highest priority radio (Cellular) -->
+      <send event="turn_on" target="#_scxml_cell"/>
+    </transition>
+
+    <!-- events related to WiFi -->
+    <transition event="connected" cond="_event.data.radioname eq wifi" target="SFF"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wifi" target="SFF"/>
+    <transition event="started" cond="_event.data.radioname eq wifi" target="SFF"/>
+    <transition event="start_failed" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+
+    <!-- events related to WiMax -->
+    <transition event="connected" cond="_event.data.radioname eq wimax" target="FSF"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wimax" target="FSF"/>
+    <transition event="started" cond="_event.data.radioname eq wimax" target="FSF"/>
+    <!-- wimax start failed, in low battery wimax is low priority &
+          in low battery states, cell is already given turn on event
+     -->
+
+    <!-- events related to CELL -->
+    <transition event="connected" cond="_event.data.radioname eq cell" target="FFS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq cell" target="FFS"/>
+    <transition event="started" cond="_event.data.radioname eq cell" target="FFS"/>
+    <transition event="start_failed" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <!-- other events -->
+    
+  </state>
+
+  <state id="FSF">
+    <transition event="startup">
+      <!-- Turn ON the highest priority radio (Cellular) -->
+      <send event="turn_on" target="#_scxml_cell"/>
+    </transition>
+
+
+    <!-- events related to WiFi -->
+    <transition event="connected" cond="_event.data.radioname eq wifi" target="SSF"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wifi" target="SSF"/>
+    <transition event="started" cond="_event.data.radioname eq wifi" target="SSF"/>
+    <!--wifi start_failed not handled as wimax is already on-->
+
+    <!-- events related to WiMax -->
+    <transition event="moved_tooff" cond="_event.data.radioname eq wimax" target="FFF"/>
+
+    <!--  events ="turnon_failed,
+                  turned_off,
+                  search_trigger,
+                  unusable,
+                  no_network,
+                  wimax_scan_timer,
+                  wimax_viability_timer,
+                  reentry_trigger" - Not handled as WiMax is the lowest priority radio
+                  in low battery state
+                  -->
+
+    <!-- events related to CELL -->
+    <transition event="connected" cond="_event.data.radioname eq cell" target="FSS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq cell" target="FSS"/>
+    <transition event="started" cond="_event.data.radioname eq cell" target="FSS"/>
+    <transition event="start_failed" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <!-- other events -->
+  </state>
+
+
+  <state id="SFF">
+    <transition event="startup">
+      <!-- Turn ON the highest priority radio (Cellular) -->
+      <send event="turn_on" target="#_scxml_cell"/>
+    </transition>
+
+
+    <!-- events related to WiFi -->
+    <transition event="turnon_failed" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="turned_off" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="unusable" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="no_network" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="search_trigger" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="timer" cond="_event.data.timer eq wifi_scan_timer">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="timer" cond="_event.data.timer eq wifi_viability_timer">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="moved_tooff" cond="_event.data.radioname eq wifi" target="FFF"/>
+
+    <!-- event = "reentry_trigger" - Not handled, becoz other radios anyway Off -->
+
+
+    <!-- events related to WiMax -->
+    <transition event="connected" cond="_event.data.radioname eq wimax" target="SSF"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wimax" target="SSF"/>
+    <transition event="started" cond="_event.data.radioname eq wimax" target="SSF"/>
+    <!--WiMax start_failed is not handled, as WiMax is low priority in low battery-->
+
+
+    <!-- events related to CELL -->
+    <transition event="connected" cond="_event.data.radioname eq cell" target="SFS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq cell" target="SFS"/>
+    <transition event="started" cond="_event.data.radioname eq cell" target="SFS"/>
+    <transition event="start_failed" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <!-- other events -->
+  </state>
+
+
+  <state id="SSF">
+    <transition event="startup">
+      <!-- Turn ON the highest priority radio (Cellular) -->
+      <send event="turn_on" target="#_scxml_cell"/>
+    </transition>
+
+
+    <!-- events related to WiFi-->
+    <transition event="reentry_trigger" cond="_event.data.radioname eq wifi">
+      <send event="turn_off" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="moved_tooff" cond="_event.data.radioname eq wifi" target="FSF"/>
+
+    <!--  events ="turnon_failed,
+                  turned_off,
+                  search_trigger,
+                  unusable,
+                  no_network,
+                  wifi_scan_timer,
+                  wifi_viability_timer" - Not handled, as WiMax is already ON  -->
+
+
+    <!-- events related to WiMax-->
+    <transition event="moved_tooff" cond="_event.data.radioname eq wimax" target="SFF"/>
+
+    <!--  events ="turnon_failed,
+                    turned_off,
+                    search_trigger,
+                    unusable,
+                    no_network,
+                    wimax_scan_timer,
+                    wimax_viability_timer,
+                    reentry_trigger" -  not handled as WiMax is the lowest priority radio -->
+
+
+    <!-- events related to CELL-->
+    <transition event="connected" cond="_event.data.radioname eq cell" target="SSS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq cell" target="SSS"/>
+    <transition event="started" cond="_event.data.radioname eq cell" target="SSS"/>
+
+    <!-- other events -->
+  </state>
+
+  <state id="FSS">
+
+    <!-- events related to WiFi -->
+    <transition event="connected" cond="_event.data.radioname eq wifi" target="SSS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wifi" target="SSS"/>
+
+    <!-- events related to WiMax -->
+    <transition event="moved_tooff" cond="_event.data.radioname eq wimax" target="FFS"/>
+
+    <!--  events ="turnon_failed,
+                  turned_off,
+                  search_trigger,
+                  wimax_scan_timer,
+                  wimax_viability_timer,
+                  unusable,
+                  reentry_trigger,
+                  no_network" - No handling, as WiMax is of lowest priority -->
+
+
+    <!-- events related to CELL -->
+    <transition event="turnon_failed" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="turned_off" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="unusable" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="no_network" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="search_trigger" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="timer" cond="_event.data.timer eq cell_scan_timer">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="reentry_trigger" cond="_event.data.radioname eq cell">
+      <send event="turn_off" target="#_scxml_wimax"/>
+      <!-- wifi is already off -->
+    </transition>
+
+    <transition event="moved_tooff" cond="_event.data.radioname eq cell" target="FSF"/>
+
+
+    <!-- other events -->
+  </state>
+
+
+  <state id="FFS">
+
+    <!-- events related to WiFi -->
+    <transition event="connected" cond="_event.data.radioname eq wifi" target="SFS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wifi" target="SFS"/>
+    <transition event="started" cond="_event.data.radioname eq wifi" target="SFS"/>
+    <transition event="start_failed" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <!-- events related to WiMax -->
+    <transition event="connected" cond="_event.data.radioname eq wimax" target="FSS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wimax" target="FSS"/>
+    <transition event="started" cond="_event.data.radioname eq wimax" target="FSS"/>
+    <!--wimax start_failed is not handled, as wimax low priority in low battery-->
+
+    <!-- events related to CELL -->
+    <transition event="turnon_failed" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="turned_off" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="unusable" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="no_network" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="search_trigger" cond="_event.data.radioname eq cell">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="timer" cond="_event.data.timer eq cell_scan_timer">
+      <send event="turn_on" target="#_scxml_wifi"/>
+    </transition>
+
+    <transition event="moved_tooff" cond="_event.data.radioname eq cell" target="FFF"/>
+
+    <!-- event = "reentry_trigger" - Not handled, as other radios anyway Off -->
+
+    <!-- other events-->
+  </state>
+
+
+
+  <state id="SFS">
+
+    <!-- events related to WiFi -->
+    <transition event="turnon_failed" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="turned_off" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="unusable" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="no_network" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="search_trigger" cond="_event.data.radioname eq wifi">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="timer" cond="_event.data.timer eq wifi_scan_timer">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="timer" cond="_event.data.timer eq wifi_viability_timer">
+      <send event="turn_on" target="#_scxml_wimax"/>
+    </transition>
+
+    <transition event="moved_tooff" cond="_event.data.radioname eq wifi" target="FFS"/>
+
+    <!-- event = "reentry_trigger" - Not handled as wimax is already off-->
+
+
+    <!-- events related to WiMax -->
+    <transition event="connected" cond="_event.data.radioname eq wimax" target="SSS"/>
+    <transition event="search_initiated" cond="_event.data.radioname eq wimax" target="SSS"/>
+    <transition event="started" cond="_event.data.radioname eq wimax" target="SSS"/>
+    <!--wimax start_failed is ignored-->
+
+
+    <!-- events related to CELL -->
+    <transition event="reentry_trigger" cond="_event.data.radioname eq cell">
+      <send event="turn_off" target="#_scxml_wifi" />
+      <!-- wimax is anyway off -->
+    </transition>
+
+    <!--  events ="turnon_failed,
+                  turned_off,
+                  search_trigger,
+                  unusable,
+                  no_network,
+                  cell_scan_timer,
+                  reentry_trigger,
+                  cell_viability_timer" - No handling, as wifi is already on -->
+
+    <!-- other events -->
+
+  </state>
+
+  <state id="SSS">
+
+    <!-- events related to WiFi-->
+    <!--  events ="turnon_failed,
+                  turned_off
+                  search_trigger
+                  unusable
+                  no_network
+                  wifi_scan_timer
+                  wifi_viability_timer - Not handled, as wimax is already on -->
+
+    <transition event="reentry_trigger" cond="_event.data.radioname eq wifi">
+      <send event="turn_off" target="#_scxml_wimax"/>
+      <!-- need not turn_off cell, as cell is high priority in low battery-->
+    </transition>
+
+    <transition event="moved_tooff" cond="_event.data.radioname eq wifi" target="FSS"/>
+
+
+    <!-- events related to WiMax radio-->
+
+    <transition event="moved_tooff" cond="_event.data.radioname eq wimax" target="SFS"/>
+
+    <!--  events ="turnon_failed,
+                  turned_off, 
+                  search_trigger,
+                  wimax_scan_timer,
+                  wimax_viability_timer,
+                  unusable,
+                  no_network,
+                  reentry_trigger" - Not handled as WiMax is of lowest priority -->
+
+
+    <!-- events related to CELL radio-->
+    <transition event="reentry_trigger" cond="_event.data.radioname eq cell">
+      <send event="turn_off" target="#_scxml_wifi"/>
+      <send event="turn_off" target="#_scxml_wimax"/>
+    </transition>
+
+    <!--  events ="turnon_failed,
+                  turned_off
+                  search_trigger
+                  unusable
+                  no_network
+                  cell_scan_timer - Not handled, as wifi is already on -->
+
+    <!-- other events-->
+  </state>
+
+</scxml>
+

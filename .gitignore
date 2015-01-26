@@ -1,0 +1,23 @@
+syntax: glob
+aa-gen/**
+gen/**
+target/**
+build/**
+out/**
+**/.idea/**
+.idea/**
+**/*.iml
+.gradle/**
+**/android/local.properties
+**/*.DS_Store
+*.pyc
+glob:*.apk
+glob:proguard_logs
+glob:.DS_Store
+glob:*.iml
+**/android-key.keystore
+**/pmd-report.html
+**/pmd-report.xml
+
+syntax: regexp
+^(local.properties$)

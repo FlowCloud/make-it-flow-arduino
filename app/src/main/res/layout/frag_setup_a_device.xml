@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<RelativeLayout
+    style="@style/HobbyistFragmentStyle"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        />
+
+    <ImageView
+        android:id="@+id/dots"
+        style="@style/Dots"
+        android:src="@drawable/dots_1"
+        />
+
+    <LinearLayout
+        android:id="@+id/setupADeviceWifi"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_above="@+id/onlineHelpLink"
+        android:layout_below="@+id/dots"
+        android:visibility="gone"
+        >
+
+        <com.imgtec.hobbyist.views.GifWebView
+            android:id="@+id/gifWebView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="0.75"
+            android:scrollbars="none"
+            app:path="file:///android_asset/setup_guide_intro_animation.gif"
+            />
+
+        <TextView
+            android:id="@+id/setupInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/setup_device_info_wifi"
+            style="@style/SetupGuideTextCentered"
+            android:layout_weight="0.25"
+            />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            >
+
+            <Button
+                android:id="@+id/startSetup"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="match_parent"
+                android:layout_marginBottom="10dp"
+                android:textColor="@android:color/white"
+                android:singleLine="true"
+                android:text="@string/start_setup"
+                android:background="@drawable/green_button_selector"
+                />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/setupADeviceNoWifi"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:layout_above="@+id/onlineHelpLink"
+        android:layout_below="@+id/dots"
+        android:visibility="gone"
+        >
+
+        <ImageView
+            android:id="@+id/setupWifiImage"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/setup_guide_wifi"
+            android:layout_centerHorizontal="true"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/setup_device_info_no_wifi"
+            style="@style/SetupGuideTextCentered"
+            android:layout_marginBottom="10dp"
+            android:layout_below="@+id/setupWifiImage"
+            android:layout_above="@+id/buttonsLayout"
+            />
+
+
+        <LinearLayout
+            android:id="@+id/buttonsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
+            >
+
+            <Button
+                android:id="@+id/cancel"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="match_parent"
+                android:layout_marginBottom="10dp"
+                android:layout_marginRight="5dp"
+                android:textColor="@android:color/white"
+                android:singleLine="true"
+                android:text="@string/cancel"
+                android:background="@drawable/gray_button_selector"
+                android:layout_weight="0.5"
+                />
+
+            <Button
+                android:id="@+id/tryAgain"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="match_parent"
+                android:layout_marginBottom="10dp"
+                android:layout_marginLeft="5dp"
+                android:textColor="@android:color/white"
+                android:singleLine="true"
+                android:text="@string/retry_setup"
+                android:background="@drawable/green_button_selector"
+                android:layout_weight="0.5"
+                />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <Button
+        android:id="@+id/onlineHelpLink"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/Link"
+        android:layout_centerInParent="true"
+        android:text="@string/online_help"
+        android:layout_alignParentBottom="true"
+        />
+
+</RelativeLayout>

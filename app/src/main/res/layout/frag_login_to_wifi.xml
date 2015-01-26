@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.imgtec.hobbyist.activities.FlowActivity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:scrollbarStyle="outsideOverlay"
+    >
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="25dp"
+            >
+
+            <ImageView
+                android:id="@+id/dots"
+                style="@style/Dots"
+                android:src="@drawable/dots_4"
+                />
+
+            <ImageView
+                android:id="@+id/leds12Animation"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_gravity="center_horizontal"
+                />
+
+            <TextView
+                android:id="@+id/yourDevice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                style="@style/SetupGuideTextCentered"
+                android:textStyle="bold"
+                tools:text="your Device"
+                />
+
+            <TextView
+                android:id="@+id/headerTv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/please_enter_the_password_for_your"
+                style="@style/SetupGuideText"
+                android:gravity="center"
+                />
+
+            <TextView
+                android:id="@+id/yourWifiNetwork"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                style="@style/SetupGuideText"
+                android:gravity="center"
+                tools:text="your WiFi network"
+                />
+
+            <EditText
+                style="@style/RoundedEditText"
+                android:id="@+id/ssidField"
+                android:inputType="text"
+                android:textColorHint="@color/gray"
+                android:hint="@string/wifi_name"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <EditText
+                style="@style/RoundedEditText"
+                android:id="@+id/passwordField"
+                android:inputType="textPassword"
+                android:textColorHint="@color/gray"
+                android:hint="@string/password"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                />
+
+            <RadioGroup
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:id="@+id/securityProtocolChoice"
+                android:background="@drawable/stroke_shape"
+                android:padding="@dimen/stroke_thickness"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                >
+                <RadioButton
+                    style="@style/ConfigureWifiRadioButtonStyle"
+                    android:id="@+id/wep"
+                    android:text="@string/wep"
+                    android:layout_margin="2dp"
+                    />
+                <RadioButton
+                    style="@style/ConfigureWifiRadioButtonStyle"
+                    android:id="@+id/wpa"
+                    android:text="@string/wpa"
+                    android:layout_margin="2dp"
+                    />
+                <RadioButton
+                    style="@style/ConfigureWifiRadioButtonStyle"
+                    android:id="@+id/wpa2"
+                    android:text="@string/wpa2"
+                    android:checked="true"
+                    android:layout_margin="2dp"
+                    />
+                <RadioButton
+                    style="@style/ConfigureWifiRadioButtonStyle"
+                    android:id="@+id/open"
+                    android:text="@string/open"
+                    android:layout_margin="2dp"
+                    />
+            </RadioGroup>
+
+            <RadioGroup
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:id="@+id/networkingProtocolChoice"
+                android:background="@drawable/stroke_shape"
+                android:padding="@dimen/stroke_thickness"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                android:visibility="gone"
+                tools:visibility="visible"
+                >
+                <RadioButton
+                    style="@style/ConfigureWifiRadioButtonStyle"
+                    android:id="@+id/dhcp"
+                    android:text="@string/dhcp_upper_letters"
+                    android:checked="true"
+                    android:layout_margin="2dp"
+                    />
+                <RadioButton
+                    style="@style/ConfigureWifiRadioButtonStyle"
+                    android:id="@+id/staticIP"
+                    android:text="@string/static_ip_upper_first_letter"
+                    android:layout_margin="2dp"
+                    />
+            </RadioGroup>
+
+            <EditText
+                style="@style/RoundedEditText"
+                android:id="@+id/staticIpField"
+                android:inputType="phone"
+                android:textColorHint="@color/gray"
+                android:hint="@string/static_ip_hint"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <EditText
+                style="@style/RoundedEditText"
+                android:id="@+id/staticDnsField"
+                android:inputType="phone"
+                android:textColorHint="@color/gray"
+                android:hint="@string/static_dns"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <EditText
+                style="@style/RoundedEditText"
+                android:id="@+id/staticNetmaskField"
+                android:inputType="phone"
+                android:textColorHint="@color/gray"
+                android:hint="@string/static_netmask"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <EditText
+                style="@style/RoundedEditText"
+                android:id="@+id/staticGatewayField"
+                android:inputType="phone"
+                android:textColorHint="@color/gray"
+                android:hint="@string/static_gateway"
+                android:layout_marginBottom="@dimen/standard_space_between_views"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <Button
+                android:id="@+id/connect"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="match_parent"
+                android:textColor="@android:color/white"
+                android:singleLine="true"
+                android:text="@string/connect_button_text"
+                android:layout_marginTop="@dimen/standard_space_between_views"
+                android:enabled="false"
+                android:background="@drawable/gray_disabled_green_enabled_selector"
+                />
+
+            <LinearLayout
+                android:id="@+id/linksLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <Button
+                    android:id="@+id/selectAnotherNetwork"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Link"
+                    android:text="@string/select_another_network"
+                    android:layout_weight="0.5"
+                    />
+
+                <Button
+                    android:id="@+id/manualConfiguration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Link"
+                    android:text="@string/manual_configuration"
+                    android:layout_weight="0.5"
+                    />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="?android:attr/progressBarStyle"
+            android:indeterminate="true"
+            android:layout_centerInParent="true"
+            />
+
+    </RelativeLayout>
+
+</ScrollView>

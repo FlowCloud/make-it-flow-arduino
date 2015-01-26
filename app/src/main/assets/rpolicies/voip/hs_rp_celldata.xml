@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scxml version="1.0" xmlns="http://www.w3.org/2005/07/scxml"
+    xmlns:hs="http://www.hellosoft.com/radio_policy" name="celldata"
+  initialstate="INIT">
+
+  <datamodel>
+    <!-- possible values for mng_opt, 'fully_manage', 'disable', or 'turnon_ifreqd' -->
+    <data id="mng_opt">fully_manage</data>
+  </datamodel>
+
+  <!-- Expecting three events from CS radio,
+       'radio_off', 'radio_connected' 'radio_notconnected' -->
+
+
+  <state id="INIT">
+    <on_entry>
+      <hs:init_timer name="celldata_conn_timer" type ="oneshot" min="30000" max="30000" /> 
+      <hs:init_timer name="celldata_searchrepeat_timer" type ="backoff" min="30000" max="9000000" mult_factor ="2" /> 
+    </on_entry>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt"/>
+    </transition>
+
+    <transition event="radio_connected" target="DISCONNECTED" />
+    <transition event="radio_off" target="OFF"/>
+
+    <!-- if 'connected' is received for Celldata assume, CS radio is connected-->
+    <transition event="connected" target="CONNECTED"/>
+
+    <!-- current status is not received, assuming CS radio is OFF -->
+    <transition event="startup" target="OFF" />
+  </state>
+
+
+  <state id="OFF"> 
+     <!-- This state represents CS radio is OFF or radio is not connected -->,
+     <on_entry>
+        <hs:reset_timer name="celldata_searchrepeat_timer"/>
+        <send event="movedto_disconn" target="#_scxml_mainradio"/>
+     </on_entry>
+
+
+     <!-- events from main policy -->
+     <transition event="connect_req" cond="mng_opt eq disable" >
+        <send event="start_failed" target="#_scxml_mainradio"/>
+     </transition>
+
+     <transition event="connect_req">
+        <send event="turn_on" target="#_scxml_cell"/>
+        <!-- initiate turnON & wait CS radio response either 'started' or 'start_failed' -->
+     </transition>
+
+     <transition event="started" targe="CONN_PENDING">
+       <!-- propagate the same to main policy & wait CS radio to connecdt -->
+       <send event="started" target="#_scxml_mainradio"/>
+     </transition>
+
+     <transition event="start_failed">
+       <send event="start_failed" target="#_scxml_mainradio"/>
+     </transition>
+
+     <transition event="radio_connected" target = "DISCONNECTED"/>
+
+     <!--ignoring 'turn_off' event from main policy, as cell radio is aleardy OFF.
+         ignoring celldata events, as cell radio itself is OFF -->
+
+    <transition event="update_mngopt">
+       <assign location="mng_opt" expr="_event.data.mng_opt"/>
+    </transition>
+  </state>
+
+
+
+  <state id = "DISCONNECTED">
+     <!-- This state represents cell radio is CONNECTED, but Celldata is not connected-->
+
+    <on_entry>
+       <reset_timer name="celldata_searchrepeat_timer"/>
+       <send event="movedto_disconn" target="#_scxml_mainradio"/>
+    </on_entry>
+
+    <transition event="radio_off" target="OFF"/>
+    <transition event="radio_notconnected" target="OFF"/> <!-- check this -->
+
+    <transition event = "connected" target="CONNECTED"/> 
+
+    <!-- event from main radio policy-->
+    <transition event = "connect_req" cond="mng_opt eq disable">
+       <send event="start_failed" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event = "connect_req" target="CONN_PROGRESS">
+       <hs:connect_network/>
+       <send event="started" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt "/>
+    </transition>
+  </state>
+
+
+
+  <state id="CONN_PENDING">
+     <!-- This state represents, waiting for cell to CONNECT, 
+          Cell radio maintian timers, hence not using any timer here -->
+ 
+    <!-- This event can only be received from cell radio SM -->
+    <transition event="radio_off" target="NCONN_TIMEDOFF"/> <!-- how to tell that radio is off -->
+    <transition event="radioon_failed" target="NCONN_TIMEDOFF">
+       <send event="conn_failed" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event="radio_connected" cond="mng_opt eq disable" target="DISCONNECTED">
+       <send event="conn_failed" target="#_scxml_mainradio"/>
+    </transition>
+
+    <!-- if mng_opt is not disabled -->
+    <transition event="radio_connected" target="CONN_PROGRESS">
+       <hs:connect_network/>
+    </transition>
+
+     <!-- events from main policy -->
+     <transition event="disconnect_req" target="RADIOOFF_PROGRESS">
+        <send event="turn_off" target="#_scxml_cell"/> 
+     </transition>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt "/>
+    </transition>
+  </state>
+
+
+
+  <state id="CONN_PROGRESS">
+    <on_entry>
+       <if cond="mng_opt eq fully_manage">
+        <hs:start_timer name="celldata_conn_timer"/>
+       </if>
+    </on_entry>
+
+   <!-- if mng_opt is 'turnon_ifreqd', will not start any timer, 
+        it will just be in state until receive any response -->
+
+    <transition event = "conn_failed" cond="mng_opt noteq disable" target="CONN_TIMEDOFF"/>
+    <transition event = "conn_failed" cond="mng_opt eq disable" target="DISCONNECTED"/>
+
+    <transition event = "connected" target="CONNECTED"/>
+
+    <!-- event from main radio policy-->
+    <transition event = "disconnect_req" con="mng_opt eq fully_manage" target="DISCONN_PROGRESS">
+       <hs:disconnect_network/>
+       <!--Not sending 'turn_off' event to cell radio,
+           cell radio will be turned_off when handoff manager sends'not_required' -->
+    </transition>
+
+    <transition event="radio_off" target="NCONN_TIMEDOFF">
+      <send event="conn_failed" target="#_scxml_mainradio"/>
+    </transition>
+    <transition event="radio_notconnected" target="NCONN_TIMEDOFF">
+      <send event="conn_failed" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event="timer" cond="mng_opt noteq fully_manage">
+       <hs:timer_fired name="celldata_conn_timer"/>
+    </transition>
+
+    <!-- if mng radio is 'fully_manage', handle timer event -->
+    <transition event = "timer" cond="_event.data.timer eq celldata_conn_timer" target="CONN_TIMEDOFF">
+       <hs:timer_fired name="celldata_conn_timer"/>
+       <hs:disconnect_network />
+       <send event="conn_failed" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event="update_mngopt" cond="_event.data.mng_opt eq fully_manage">
+      <!-- if previously mng_opt is not 'fully_manage', timer will not be started -->
+      <if cond="mng_opt noteq fully_manage">
+         <hs:start_timer name="cell_turnon_timer"/>
+      </if>
+      <assign location="mng_opt" expr="fully_manage" />
+    </transition>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt" />
+    </transition>
+
+    <on_exit>
+       <hs:stop_timer name="celldata_conn_timer"/>
+    </on_exit>
+  </state>
+
+
+
+  <state id="DISCONN_PROGRESS">
+   <transition event="disconnected" target="DISCONNECTED"/>
+   <transition event="radio_off" target="OFF"/>
+   <!-- ignoring any other events -->
+  </state>
+
+
+  <state id="RADIOOFF_PROGRESS">
+   <transition event="radio_off" target="OFF"/>
+   <!-- ignoring any other events -->
+  </state>
+
+
+  <state id="CONN_TIMEDOFF">
+    <!-- This state represents, CS radio is connected, Celldata is TimedOFF -->
+    <on_entry>
+       <if cond="mng_opt noteq disable">
+         <hs:start_timer name="celldata_searchrepeat_timer"/>
+       </if>
+    </on_entry>
+
+    <transition event="radio_notconnected" target="NCONN_TIMEDOFF"/>
+    <transition event="radio_off" target="NCONN_TIMEDOFF"/>
+
+    <!-- event="conn_failed' will not occur in this state, ignored -->
+
+    <transition event = "connected" target="CONNECTED">
+      <hs:stop_timer name="celldata_searchrepeat_timer"/>
+    </transition>
+
+    <transition event="timer" cond="mng_opt eq disable" target="DISCONNECTED">
+       <hs:timer_fired name="celldata_searchrepeat_timer"/>
+    </transition>
+
+    <transition event = "timer" target="CONN_PROGRESS">
+       <hs:timer_fired name="celldata_searchrepeat_timer"/>
+       <hs:connect_network/>
+    </transition>
+
+    <!--event from main radio policy-->
+    <transition event = "disconnect_req" target="DISCONNECTED">
+      <hs:stop_timer name="celldata_searchrepeat_timer"/>
+    </transition>
+
+     <!-- start timer if previous mng_opt is disabled -->    
+    <transition event="update_mngopt" cond="_event.data.mng_opt noteq disable">
+       <if cond="mng_opt eq disable">
+         <hs:start_timer name="celldata_searchrepeat_timer"/>
+       </if>
+       <assign location="mng_opt" expr="_event.data.mng_opt" />
+    </transition>
+
+    <transition event="update_mngopt"  target="DISCONNECTED">
+      <assign location="mng_opt" expr="_event.data.mng_opt" />
+      <hs:stop_timer name="celldata_searchrepeat_timer"/>
+    </transition>
+
+    <on_exit>
+    </on_exit>
+  </state>
+
+
+  <state id="NCONN_TIMEDOFF">
+    <!-- This state represents, CS radio is not connected or turnedOFF, Celldata is TimedOFF -->
+
+    <on_entry>
+       <if cond="mng_opt noteq disable">
+         <!-- CONN_TIMEDOFF/NCONN_TIMEDOFF uses same timer,
+              if timer already started  'start_timer' will ignore it -->
+         <hs:start_timer name="celldata_searchrepeat_timer"/>
+       </if>
+    </on_entry>
+
+    <transition event="radio_connected" target="CONN_TIMEDOFF"/>
+
+    <!-- event="conn_failed' will not occur in this state, ignored -->
+
+    <transition event = "connected" target="CONNECTED">
+      <hs:stop_timer name="celldata_searchrepeat_timer"/>
+    </transition>
+
+    <transition event="timer" cond="mng_opt eq disable" target="OFF">
+       <hs:timer_fired name="celldata_searchrepeat_timer"/>
+    </transition>
+
+    <transition event = "timer" target="CONN_PENDING">
+       <hs:timer_fired name="celldata_searchrepeat_timer"/>
+       <send event="turn_on" target="#_scxml_cell"/>
+    </transition>
+
+    <!--event from main radio policy-->
+    <transition event = "disconnect_req" target="RADIOOFF_PROGRESS">
+      <hs:stop_timer name="celldata_searchrepeat_timer"/>
+      <send event="turn_off" target="#_scxml_cell"/>
+    </transition>
+
+     <!-- start timer if previous mng_opt is disabled -->    
+    <transition event="update_mngopt" cond="_event.data.mng_opt noteq disable">
+       <if cond="mng_opt eq disable">
+         <hs:start_timer name="celldata_searchrepeat_timer"/>
+       </if>
+       <assign location="mng_opt" expr="_event.data.mng_opt" />
+    </transition>
+
+    <transition event="update_mngopt"  target="OFF">
+      <assign location="mng_opt" expr="_event.data.mng_opt" />
+      <hs:stop_timer name="celldata_searchrepeat_timer"/>
+    </transition>
+
+    <on_exit>
+    </on_exit>
+  </state>
+
+
+
+  <state id = "CONNECTED">
+   <on_entry>
+       <hs:reset_timer name="celldata_searchrepeat_timer"/> 
+    </on_entry>
+
+    <transition event = "disconnected" con="mng_opt noteq disable" target="CONN_TIMEDOFF" />
+
+    <transition event = "disconnected" target="DISCONNECTED"/>
+
+    <transition event = "radio_notconnected" target="NCONN_TIMEDOFF">
+       <send event="disconnected" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event = "radio_off" target="NCONN_TIMEDOFF">
+       <send event="disconnected" target="#_scxml_mainradio"/>
+    </transition>
+
+    <!-- event from main radio -->
+    <transition event = "not_required" cond="mng_opt eq fully_manage" target="DISCONN_PROGRESS">
+      <hs:disconnect_network/>
+      <!-- 'turn_off' event is not send to Cell radio, HOOF mngr will send 'not_required' to cell radio-->
+    </transition>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt" />
+    </transition>
+
+    <on_exit>
+    </on_exit>
+  </state>
+</scxml>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                style="@style/HobbyistFragmentStyle"
+    >
+
+    <TextView
+        android:id="@+id/deviceDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:gravity="left"
+        android:text="@string/device_details"
+        android:textSize="@dimen/small_label_text_size"
+        android:layout_marginBottom="20dp"
+        />
+
+    <LinearLayout
+        android:id="@+id/giveDeviceANameLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
+        >
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="@string/give_your_device_a_name"
+            android:layout_marginBottom="10dp"
+            android:textSize="@dimen/small_label_text_size"
+            />
+
+        <EditText
+            android:id="@+id/deviceNameField"
+            style="@style/RoundedEditText"
+            android:hint="@string/new_name_of_your_device"
+            android:textColorHint="@color/gray"
+            android:inputType="textEmailAddress"
+            android:layout_marginBottom="10dp"
+            />
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_height="@dimen/button_height"
+            android:layout_width="match_parent"
+            android:textColor="@android:color/white"
+            android:singleLine="true"
+            android:text="@string/save"
+            android:background="@drawable/green_button_selector"
+            />
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/relativeLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_below="@+id/deviceDetails"
+        android:layout_above="@+id/giveDeviceANameLayout"
+        >
+
+        <TextView
+            android:id="@+id/macText"
+            style="@style/DeviceDetailValue"
+            android:text="@string/mac"
+            />
+
+        <TextView
+            android:id="@+id/macValue"
+            style="@style/DeviceDetailText"
+            android:layout_toRightOf="@id/macText"
+            />
+
+        <TextView
+            android:id="@+id/serialNumberText"
+            style="@style/DeviceDetailValue"
+            android:text="@string/serial_number_abbreviation"
+            android:layout_below="@+id/macText"
+            />
+
+        <TextView
+            android:id="@+id/serialNumberValue"
+            style="@style/DeviceDetailText"
+            android:layout_below="@+id/macText"
+            android:layout_toRightOf="@id/serialNumberText"
+            />
+
+        <TextView
+            android:id="@+id/deviceTypeText"
+            style="@style/DeviceDetailValue"
+            android:text="@string/device_type"
+            android:layout_below="@+id/serialNumberText"
+            />
+
+        <TextView
+            android:id="@+id/deviceTypeValue"
+            style="@style/DeviceDetailText"
+            android:layout_below="@+id/serialNumberText"
+            android:layout_toRightOf="@id/deviceTypeText"
+            />
+
+        <TextView
+            android:id="@+id/softwareVersionText"
+            style="@style/DeviceDetailValue"
+            android:text="@string/software_version"
+            android:layout_below="@+id/deviceTypeText"
+            />
+
+        <TextView
+            android:id="@+id/softwareVersionValue"
+            style="@style/DeviceDetailText"
+            android:layout_below="@+id/deviceTypeText"
+            android:layout_toRightOf="@id/softwareVersionText"
+            />
+
+        <TextView
+            android:id="@+id/nameText"
+            style="@style/DeviceDetailValue"
+            android:singleLine="true"
+            android:text="@string/name"
+            android:layout_below="@+id/softwareVersionText"
+            />
+
+        <TextView
+            android:id="@+id/nameValue"
+            style="@style/DeviceDetailText"
+            android:layout_below="@+id/softwareVersionText"
+            android:layout_toRightOf="@id/nameText"
+            />
+
+    </RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="?android:attr/progressBarStyle"
+        android:indeterminate="true"
+        android:layout_centerInParent="true"
+        />
+
+</RelativeLayout>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<resources>
+    <color name="light_purple">#FF882374</color>
+    <color name="purple">#FF770173</color>
+    <color name="dark_purple">#FF550051</color>
+    <color name="lime_green">#FF99C536</color>
+    <color name="dark_lime_green">#FF77A314</color>
+    <color name="gray">#FFCBCCD0</color>
+    <color name="dark_gray">#555555</color>
+    <color name="red">#FF0000</color>
+    <color name="blue">#4455aa</color>
+    <color name="dark_turquoise">#008fcb</color>
+
+    <color name="very_light_nice_gray">#f8f8f8</color>
+    <color name="light_nice_gray">#d0d0d0</color>
+    <color name="nice_gray_text">#cccccc</color>
+    <color name="nice_gray">#707070</color>
+    <color name="nice_little_dark_gray">#5c5c5c</color>
+    <color name="nice_dark_gray">#2a2a2a</color>
+    <color name="very_light_nice_purple">#FFf3e8f3</color>
+    <color name="very_light_nice_pink">#FFf5e9f5</color>
+    <color name="nice_lavender">#FFba49bb</color>
+    <color name="nice_pink_text">#FFe189dd</color>
+    <color name="light_nice_purple">#FF881184</color>
+    <color name="nice_purple">#FF750073</color>
+    <color name="dark_nice_purple">#FF540063</color>
+    <color name="nice_green">#FF2a7e46</color>
+    <color name="dark_nice_green">#FF286b45</color>
+
+    <color name="log_debug_background">#dff0d8</color>
+    <color name="log_debug_border">#d6e9c6</color>
+    <color name="log_debug_text">#3c763d</color>
+    <color name="log_information_background">#d9edf7</color>
+    <color name="log_information_border">#bce8f1</color>
+    <color name="log_information_text">#31708f</color>
+    <color name="log_warning_background">#fcf8e3</color>
+    <color name="log_warning_border">#faebcc</color>
+    <color name="log_warning_text">#8a6d3b</color>
+    <color name="log_error_background">#f2dede</color>
+    <color name="log_error_border">#ebccd1</color>
+    <color name="log_error_text">#a94442</color>
+
+    <color name="very_subtle_green">#f1fdd5</color>
+    <color name="subtle_green">#c8e58b</color>
+    <color name="green_shadow">#8fc332</color>
+
+    <color name="device_detail_gray">#777777</color>
+
+</resources>

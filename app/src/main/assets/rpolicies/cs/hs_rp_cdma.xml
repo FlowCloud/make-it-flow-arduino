@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scxml version="1.0" xmlns="http://www.w3.org/2005/07/scxml"
+    xmlns:hs="http://www.hellosoft.com/radio_policy" name="cell"
+  initialstate="INIT">
+
+  <datamodel>
+   <!-- possible values for mng_opt, 'fully_manage', 'disable', or 'turnon_ifreqd' -->
+    <data id="mng_opt">fully_manage</data>
+  </datamodel>
+
+  <state id="INIT">
+    <on_entry>
+      <hs:init_timer name="cell_scan_timer" type="oneshot" min="45000" max="45000"/>
+      <hs:init_timer name="cell_turnon_timer" type="oneshot" min="30000" max="30000"/>
+      <hs:init_timer name="cell_searchrepeat_timer" type="backoff" min="30000" max="900000" mult-factor="2"/>
+      <!-- event="usable" is not applicable for CS. So No Viability Timer. -->
+      <hs:init_timer name="cell_viabilityretry_timer" type="oneshot" min="60000" max="60000"/>
+    </on_entry>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt"/>
+    </transition>
+
+    <transition event="turned_off" target="OFF" />
+    <transition event="connected" target="CONNECTED" />
+    <transition event="search_initiated" target="SEARCHING" />
+    <transition event="startup" target="OFF" />
+  </state>
+
+
+  <state id = "OFF">
+    <on_entry>
+       <send event="moved_tooff" target="#_scxml_mainradio"/>
+    </on_entry>
+
+    <transition event = "search_initiated" target="SEARCHING"/>
+    <transition event = "connected" target="CONNECTED"/>
+
+    <!-- event from main radio policy-->
+    <!-- turno_on if mng_opt eq 'fully_manage' of 'turnon_ifreqd' -->
+    <transition event = "turn_on" cond="mng_opt noteq disable" target="TURNON_PROGRESS">
+      <hs:turn_on/>
+      <send event="started" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event = "turn_on">
+      <send event="start_failed" target="#_scxml_mainradio"/>
+    </transition>
+
+    <!-- turn on radio if mng-radio if changed to 'turn_ifreqd' or fully_manage'
+         as this(CS) is highest priority radio in this mode(CS) -->
+    <transition event="update_mngopt" cond="_event.data.mng_opt noteq disable" target="TURNON_PROGRESS">
+      <assign location="mng_opt" expr="_event.data.mng_opt"/>
+      <hs:turn_on/>
+      <send event="started" target="#_scxml_mainradio"/>
+    </transition>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="disable"/>
+    </transition>
+  </state>
+
+
+  <state id="TURNOFF_PROGRESS">
+     <transition event="turned_off" target="OFF"/>
+     <!-- ignoring any other events -->
+  </state>
+
+
+  <state id="TURNON_PROGRESS">
+    <on_entry>
+       <if cond="mng_opt eq fully_manage">
+        <hs:start_timer name="cell_turnon_timer"/>
+       </if>
+    </on_entry>
+
+   <!-- if mng_opt is 'turnon_ifreqd', radio sm will turn_on radio & move to 'TURNON_PROGRESS'
+        but will not start any timer, it will just be in state until receive any response -->
+
+    <transition event = "turnon_failed" cond="mng_opt noteq disable" target="TIMED_OFF"/>
+    <transition event = "turnon_failed" cond="mng_opt eq disable" target="OFF"/>
+
+    <transition event = "search_initiated" target="SEARCHING"/>
+    <transition event = "connected" target="CONNECTED"/>
+
+    <!-- Not expected in this state. But for completeness -->
+    <transition event = "turned_off" cond="mng_opt noteq disable" target="TIMED_OFF"/>
+    <transition event = "turned_off" cond="mng_opt eq disable" target="OFF"/>
+
+    <transition event = "no_network" cond= "mng_opt eq fully_manage" target="TIMED_OFF">
+      <hs:turn_off/>
+    </transition>
+
+    <transition event="timer" cond="mng_opt noteq fully_manage">
+      <hs:timer_fired name="cell_turnon_timer"/>
+    </transition>
+
+    <!-- if mng radio is 'fully_manage', handle timer event -->
+    <transition event = "timer" cond="_event.data.timer eq cell_turnon_timer" target="TIMED_OFF">
+      <hs:timer_fired name="cell_turnon_timer"/>
+      <hs:turn_off/>
+      <send event="turnon_failed" target="#_scxml_mainradio"/>
+    </transition>
+
+    <!-- event from main radio policy-->
+    <transition event = "turn_off" cond="mng_opt eq fully_manage" target="TURNOFF_PROGRESS">
+      <hs:turn_off/>
+    </transition>
+
+    <transition event="update_mngopt" cond="_event.data.mng_opt eq fully_manage">
+      <!-- if previously mng_opt is not 'fully_manage', timer will not be started -->
+      <if cond="mng_opt noteq fully_manage">
+         <hs:start_timer name="cell_turnon_timer"/>
+      </if>
+      <assign location="mng_opt" expr="fully_manage" />
+    </transition>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt" />
+    </transition>
+   
+    <on_exit>
+      <hs:stop_timer name="cell_turnon_timer"/>
+    </on_exit>
+  </state>
+
+
+  <state id="TIMED_OFF">
+    <on_entry>
+     <!-- start_timer if mng_opt is 'fully_manage' or 'turnon_ifreqd' -->
+       <if cond="mng_opt noteq disable">
+         <hs:start_timer name="cell_searchrepeat_timer"/>
+       </if>
+    </on_entry>
+
+    <!-- event="turnon_failed' will not occur in this state -->
+
+    <transition event = "search_initiated" target="SEARCHING"/>
+    <transition event = "connected" target="CONNECTED"/>
+
+    <transition event="timer" cond="mng_opt eq disable">
+       <hs:timer_fired name="cell_searchrepeat_timer"/>
+    </transition>
+
+    <!-- if mng radio is 'fully_manage' or turnon_ifreqd', handle timer event -->
+    <transition event = "timer" cond="_event.data.timer eq cell_searchrepeat_timer" target="TURNON_PROGRESS">
+       <hs:timer_fired name="cell_searchrepeat_timer"/>
+       <hs:turn_on/>
+    </transition>
+
+    <!--event from main radio policy-->
+    <transition event = "turn_off" target="OFF"/>
+
+     <!-- start timer if previous mng_opt is disabled -->    
+    <transition event="update_mngopt" cond="_event.data.mng_opt noteq disable">
+      <if cond="mng_opt eq disable">
+         <hs:start_timer name="cell_searchrepeat_timer"/>
+      </if>
+      <assign location="mng_opt" expr="_event.data.mng_opt"/>
+    </transition>
+
+    <transition event="update_mngopt" target="OFF">
+      <assign location="mng_opt" expr="disable"/>
+    </transition>
+
+    <on_exit>
+      <hs:stop_timer name="cell_searchrepeat_timer"/>
+    </on_exit>
+  </state>
+
+
+  <state id = "SEARCHING">
+    <on_entry>
+      <if cond="mng_opt eq fully_namage">
+        <hs:start_timer name="cell_scan_timer"/>
+      </if>
+    </on_entry>
+
+   <transition event = "timer" cond="_event.data.timer eq cell_scan_timer" target="TIMED_OFF">
+      <hs:timer_fired name="cell_scan_timer"/>
+      <hs:turn_off/>
+    </transition>
+
+    <transition event = "connected" target = "CONNECTED"/>
+
+    <transition event = "turned_off" cond="mng_opt noteq disable" target="TIMED_OFF"/>
+    <transition event = "turned_off" cond="mng_opt eq disable" target="OFF"/>
+
+    <transition event = "no_network" cond="mng_opt eq fully_manage" target="TIMED_OFF">
+      <hs:turn_off/>
+    </transition>
+
+    <!--event from main radio policy-->
+    <!-- ignore turn_off, when mng_opt eq 'disable' or 'turnon_ifreqd' -->
+    <transition event = "turn_off" cond="mng_opt eq fully_manage" target="TURNOFF_PROGRESS">
+      <hs:turn_off/>
+    </transition>
+
+    <transition event="update_mngopt" cond="_event.data.mng_opt eq fully_manage">
+      <if cond="mng_opt noteq fully_manage">
+         <hs:start_timer name="cell_scan_timer"/>
+      </if>
+      <assign location="mng_opt" expr="fully_manage"/>
+    </transition>
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt"/>
+      <hs:stop_timer name="cell_scan_timer"/>
+    </transition>
+
+     <on_exit>
+        <hs:stop_timer name="cell_scan_timer"/>
+    </on_exit>
+  </state>
+
+
+  <state id = "CONNECTED">
+    <on_entry>
+        <!-- No Viability Timer for cellular -->
+        <hs:reset_timer name="cell_searchrepeat_timer"/>
+    </on_entry>
+
+    <transition event = "disconnected" target="SEARCHING"/>
+
+    <!-- ignoring event usable -->
+
+    <transition event="no_network" cond="mng_opt eq fully_manage" target="VTIMED_OFF">
+      <hs:turn_off/>
+    </transition>
+
+    <transition event="unusable" cond="mng_opt eq fully_manage" target="VTIMED_OFF">
+      <hs:turn_off/>
+    </transition>
+
+    <transition event = "turned_off" cond="mng_opt noteq disable" target="TIMED_OFF"/>
+    <transition event = "turned_off" cond="mng_opt eq disable" target="OFF"/>
+
+    <transition event = "not_required" cond="mng_opt eq fully_manage" target="TURNOFF_PROGRESS">
+      <hs:turn_off/>
+    </transition>
+
+    <!--events from main radio policy
+        radio should not be turned off , even if from main in this state-->
+
+    <transition event="update_mngopt">
+      <assign location="mng_opt" expr="_event.data.mng_opt"/>
+    </transition>
+
+    <on_exit>
+    </on_exit>
+  </state>
+
+
+  <state id="VTIMED_OFF">
+    <on_entry>
+       <if cond="mng_opt noteq disable">
+          <hs:start_timer name="cell_viabilityretry_timer"/>
+       </if>
+    </on_entry>
+
+   <!-- event="turned_off"  ignored -->
+
+    <transition event = "timer" cond="mng_opt eq disable">
+      <hs:timer_fired name="cell_viabilityretry_timer"/>
+    </transition>
+
+    <transition event = "timer" cond="_event.data.timer eq cell_viabilityretry_timer" target="TURNON_PROGRESS">
+      <hs:timer_fired name="cell_viabilityretry_timer"/>
+      <hs:turn_on/>
+    </transition>
+
+    <!-- event="turnon_failed' will not occur in this state -->
+    <transition event = "search_initiated" target="SEARCHING"/>
+    <transition event = "connected" target="CONNECTED"/>
+
+    <!--event from main radio policy-->
+    <transition event = "turn_off"  target="OFF"/>
+
+    <transition event="update_mngopt" cond="_event.data.mng_opt noteq disable">
+      <if cond="mng_opt eq disable">
+         <hs:start_timer name="cell_viabilityretry_timer"/>
+      </if>
+      <assign location="mng_opt" expr="_event.data.mng_opt"/>
+    </transition>
+
+    <transition event="update_mngopt" target="OFF">
+      <assign location="mng_opt" expr="disable" />
+    </transition>
+ 
+    <on_exit>
+      <hs:stop_timer name="cell_viabilityretry_timer"/>
+    </on_exit>
+  </state>
+</scxml>

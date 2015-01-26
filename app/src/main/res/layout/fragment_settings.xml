@@ -1,0 +1,127 @@
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/HobbyistFragmentStyle"
+    android:orientation="vertical"
+    tools:context="com.imgtec.hobbyist.fragments.loginsignup.SettingsFragment">
+
+    <ScrollView
+        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_weight="1"
+        >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/setting_text_size"
+                android:layout_marginTop="10dp"
+                android:text="@string/oAuthKey"
+                android:visibility="visible"
+                />
+
+            <EditText
+                android:id="@+id/keyEdit"
+                style="@style/RoundedEditText"
+                android:inputType="text"
+                android:layout_marginTop="5dp"
+                android:hint="@string/oAuthKey"
+                tools:text="test"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/setting_text_size"
+                android:layout_marginTop="10dp"
+                android:text="@string/oAuthSecret"
+                android:visibility="visible"
+                />
+
+            <EditText
+                android:id="@+id/secretEdit"
+                style="@style/RoundedEditText"
+                android:inputType="text"
+                android:hint="@string/oAuthSecret"
+                android:layout_marginTop="5dp"
+                tools:text="test"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/setting_text_size"
+                android:layout_marginTop="10dp"
+                android:text="@string/root_url"
+                android:visibility="gone"
+                />
+
+            <TextView
+                android:id="@+id/buildNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/setting_text_size"
+                android:paddingTop="10dp"
+                android:paddingBottom="5dp"
+                tools:text="build number text"
+                android:visibility="visible"
+                />
+
+            <EditText
+                android:id="@+id/rootEdit"
+                style="@style/RoundedEditText"
+                android:inputType="text"
+                android:layout_marginTop="5dp"
+                android:hint="@string/root_url"
+                android:visibility="gone"
+                tools:text="test"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/setting_text_size"
+                android:layout_marginTop="10dp"
+                android:text="@string/wifire_url"
+                android:visibility="gone"
+                />
+
+            <EditText
+                android:id="@+id/wifireEdit"
+                style="@style/RoundedEditText"
+                android:inputType="text"
+                android:layout_marginTop="5dp"
+                android:hint="@string/wifire_url"
+                android:visibility="gone"
+                tools:text="test"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/save"
+        android:layout_height="@dimen/button_height"
+        android:layout_width="match_parent"
+        android:layout_marginTop="25dp"
+        android:textColor="@android:color/white"
+        android:singleLine="true"
+        android:text="@string/save"
+        android:background="@drawable/green_button_selector" />
+
+</LinearLayout>

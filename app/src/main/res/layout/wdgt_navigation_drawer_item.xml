@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ <b>Copyright 2014 by Imagination Technologies Limited
+  ~ and/or its affiliated group companies.</b>\n
+  ~ All rights reserved.  No part of this software, either
+  ~ material or conceptual may be copied or distributed,
+  ~ transmitted, transcribed, stored in a retrieval system
+  ~ or translated into any human or computer language in any
+  ~ form by any means, electronic, mechanical, manual or
+  ~ other-wise, or disclosed to the third parties without the
+  ~ express written permission of Imagination Technologies
+  ~ Limited, Home Park Estate, Kings Langley, Hertfordshire,
+  ~ WD4 8LZ, U.K.
+  -->
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="45dp"
+    android:background="@drawable/purple_button_selector"
+    >
+
+    <ImageView
+        android:id="@+id/selectionMark"
+        android:layout_width="10dp"
+        android:layout_height="match_parent"
+        android:src="@drawable/lime_green_background"
+        android:layout_above="@+id/additionalSeparator"
+        android:visibility="invisible"
+        />
+
+    <TextView
+        android:layout_toRightOf="@+id/selectionMark"
+        android:id="@+id/navigationDrawerItemText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/my_device"
+        android:gravity="center_vertical"
+        android:paddingLeft="30dp"
+        android:paddingRight="10dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:textSize="@dimen/subtitle_text_size"
+        android:textColor="@color/gray"
+        android:layout_centerVertical="true"
+        />
+
+    <ImageView
+        android:id="@+id/additionalSeparator"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:src="@drawable/light_purple_background"
+        android:layout_alignParentBottom="true"
+        />
+
+</RelativeLayout>
