@@ -93,19 +93,36 @@ public class AsyncMessage {
       xpp = factory.newPullParser();
       xpp.setInput(new StringReader(xml));
       int eventType = xpp.getEventType();
+
       while (eventType != XmlPullParser.END_DOCUMENT) {
         if (eventType == XmlPullParser.START_TAG) {
           final MessageType messageType = MessageType.retrieveMessageTypeFromXmlTag(xpp.getName());
+          int start = xpp.getColumnNumber();
           if (messageType != null && !messageType.equals(MessageType.EMPTY)) {
             setType(messageType);
+          } else if (xpp.getName().equals("responseparams")){
+              eventType = xpp.next();
+
+              int end = start;
+              while (true){
+                  if (eventType == XmlPullParser.END_TAG && xpp.getName().equals("responseparams")){
+                      break;
+                  }
+                  end = xpp.getColumnNumber();
+                  eventType = xpp.next();
+              }
+
+              addNode("responseparams", xml.substring(start-1, end-1));
           } else {
             addNode(xpp.getName(), xpp.nextText());
           }
         }
+
         eventType = xpp.next();
       }
     } catch (XmlPullParserException | IOException e) {
       DebugLogger.log(getClass().getSimpleName(), "parsing xml failed");
+        e.printStackTrace();
     }
   }
 
