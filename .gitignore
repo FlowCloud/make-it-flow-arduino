@@ -1,4 +1,3 @@
-syntax: glob
 aa-gen/**
 gen/**
 target/**
@@ -11,13 +10,14 @@ out/**
 **/android/local.properties
 **/*.DS_Store
 *.pyc
-glob:*.apk
-glob:proguard_logs
-glob:.DS_Store
-glob:*.iml
+*.apk
+proguard_logs
+.DS_Store
+*.iml
 **/android-key.keystore
 **/pmd-report.html
 **/pmd-report.xml
+app/build
+local.properties
+gradle/**
 
-syntax: regexp
-^(local.properties$)
