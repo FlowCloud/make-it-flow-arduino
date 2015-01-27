@@ -26,17 +26,13 @@ public enum Command {
   SETLED2("SET LED #2", "SET LED #2"),
   SETLED3("SET LED #3", "SET LED #3"),
   SETLED4("SET LED #4", "SET LED #4"),
-  CLEAR_LEDS("ACKNOWLEDGE LEDS", "CLEAR LEDS"),
-  REBOOT_SOFTAP("REBOOT SOFTAP", "REBOOT SOFTAP"),
+  SAY_HELLO("SAY HELLO", "SAY HELLO"),
+  GET_STATUS("GET STATUS", "GET STATUS"),
   REBOOT("REBOOT", "REBOOT"),
-  ARDUINO_COMMAND("ARDUINO COMMAND", "ARDUINO COMMAND"),
   FACTORY_RESET("FACTORY RESET", ""),
   RENAME_DEVICE("RENAME DEVICE", "");
 
   public static String prepareCommand(String display) {
-    if(display.contains(CLEAR_LEDS.displayedAs)) {
-      return display.replace(CLEAR_LEDS.displayedAs, CLEAR_LEDS.command);
-    }
     return display;
   }
 

@@ -406,23 +406,6 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
   @Override
   public void onCommandRXMessageReceived(final AsyncMessage msg) {
     showCommandRXMessage(msg);
-    handler.post(new Runnable() {
-      @Override
-      public void run() {
-        if (isCommandMode) {
-          String commandText = commandEditText.getText().toString();
-          if (commandText.equalsIgnoreCase(Command.REBOOT.getCommand()) || commandText.equalsIgnoreCase(Command.GET_STATUS.getCommand())) {
-            reactOnRebootCommand();
-          }
-        }
-      }
-
-      private void reactOnRebootCommand() {
-        Fragment fragment = SimpleFragmentFactory.createFragment(ConnectedDevicesFragment.TAG, true);
-        showConnectedDevicesFragmentDialog(fragment);
-        ((FlowActivity) activity).setUIMode(NDMenuMode.Initial);
-      }
-    });
   }
 
   /**
