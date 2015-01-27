@@ -22,6 +22,10 @@ import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.text.Html;
+import android.text.Spanned;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +51,7 @@ import com.imgtec.hobbyist.flow.Command;
 import com.imgtec.hobbyist.flow.DevicePresenceListener;
 import com.imgtec.hobbyist.flow.FlowEntities;
 import com.imgtec.hobbyist.flow.FlowHelper;
+import com.imgtec.hobbyist.fragments.menu.setupguide.SpannedAdapter;
 import com.imgtec.hobbyist.fragments.navigationdrawer.NDListeningFragment;
 import com.imgtec.hobbyist.fragments.navigationdrawer.NDMenuItem;
 import com.imgtec.hobbyist.utils.BackgroundExecutor;
@@ -60,6 +65,8 @@ import com.imgtec.hobbyist.utils.SimpleFragmentFactory;
 import com.imgtec.hobbyist.utils.WifiUtil;
 import com.imgtec.hobbyist.views.InstantAutoCompleteTextView;
 
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -67,6 +74,13 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 /**
  * Fragment used to interact with Board through Flow.
@@ -80,9 +94,9 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
 
   public static final String TAG = "InteractiveModeFragment";
 
-  public static final String TX_MESSAGE = "TX message:\n";
-  public static final String RX_MESSAGE = "RX message:\n";
-  public static final String CMD_MESSAGE = "Received message:\n";
+  public static final String TX_MESSAGE = "<b>TX message:</b>";
+  public static final String RX_MESSAGE = "<b>RX message:</b>";
+  public static final String CMD_MESSAGE = "<b>Received message:</b>";
   private RadioGroup interactiveModeChoice;
   private TextView deviceName;
   private EditText messageText;
@@ -91,8 +105,8 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
   private Button clearButton;
   private Button searchUsersButton;
   private ListView messagesListView;
-  private List<String> messageList = new CopyOnWriteArrayList<>();
-  private ArrayAdapter<String> messageListAdapter;
+  private List<Spanned> messageList = new CopyOnWriteArrayList<>();
+  private SpannedAdapter messageListAdapter;
   private ConnectivityReceiver connectionReceiver;
 
   private boolean isCommandMode = true;
@@ -158,7 +172,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
   }
 
   private void initListAdapter() {
-    messageListAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, messageList);
+    messageListAdapter = new SpannedAdapter(getActivity(), android.R.layout.simple_list_item_1, messageList);
     messagesListView.setAdapter(messageListAdapter);
   }
 
@@ -319,8 +333,8 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
         } catch (FlowException e) {
           DebugLogger.log(getClass().getSimpleName(), e);
           ActivitiesAndFragmentsHelper.showToast(appContext,
-              ErrorHtmlLogger.log(FlowEntities.getInstance(appContext).getLastError()),
-              handler);
+                  ErrorHtmlLogger.log(FlowEntities.getInstance(appContext).getLastError()),
+                  handler);
         }
       }
     });
@@ -332,7 +346,9 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
    * @param commandString previously sent command text.
    */
   private void showCommandTXMessage(String commandString) {
-    messageList.add(0, TX_MESSAGE + DateFormatter.now(appContext) + "\n" + commandString + "\n");
+    messageList.add(0,  Html.fromHtml("<font color='#006400'>" + TX_MESSAGE + "<br/>" +
+                        DateFormatter.now(appContext) + "<br/>" +
+                        TextUtils.htmlEncode(commandString) + "<br/></font>"));
     removeMessageIfListIsTooLong();
     notifyMessageListAdapter();
   }
@@ -373,7 +389,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
           responseText = "";
           break;
       }
-      messageList.add(0, "Command " + responseText);
+      messageList.add(0, Html.fromHtml("<font color='fuchsia'><b>Response:</b> " + TextUtils.htmlEncode(responseText) +  "</font>"));
       removeMessageIfListIsTooLong();
       notifyMessageListAdapter();
       setCommandUIEnabled(true);
@@ -395,7 +411,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
       public void run() {
         if (isCommandMode) {
           String commandText = commandEditText.getText().toString();
-          if (commandText.equalsIgnoreCase(Command.REBOOT.getCommand()) || commandText.equalsIgnoreCase(Command.REBOOT_SOFTAP.getCommand())) {
+          if (commandText.equalsIgnoreCase(Command.REBOOT.getCommand()) || commandText.equalsIgnoreCase(Command.GET_STATUS.getCommand())) {
             reactOnRebootCommand();
           }
         }
@@ -426,14 +442,58 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
    * @param msg AsyncMessage object which can be parsed to get additional data.
    */
   private void showCommandRXMessage(AsyncMessage msg) {
-    messageList.add(0, RX_MESSAGE + DateFormatter.now(appContext) + "\n" + commandEditText.getText().toString()
-        + " " + msg.getNode(AsyncMessageNodeKeys.RESPONSE_CODE) + msg.getNode(AsyncMessageNodeKeys.RESPONSE_PARAMS));
+    String html = RX_MESSAGE + "<br/>" +
+            DateFormatter.now(appContext) + "<br/>" +
+            Html.fromHtml(commandEditText.getText().toString()).toString() + " &#8594; " +
+            Html.fromHtml(msg.getNode(AsyncMessageNodeKeys.RESPONSE_CODE)).toString() + "<br/>";
+    String params = msg.getNode(AsyncMessageNodeKeys.RESPONSE_PARAMS);
+    if (params != null && !params.equals("")) {
+      try {
+        html += "</font><font color='#4169E1'>" + formatXML(params) + "</font>";
+      } catch (TransformerException e) {
+        e.printStackTrace();
+        Log.e("InteractiveModeFragment.showCommandRXMessage", "Failed to format response parameters from command", e);
+        html += "</font><font color='red'>Error formatting response \"" + params + "\"</font>";
+      }
+    } else {
+      html += "</font><font color='black'>No response parameters</font>";
+    }
+    messageList.add(0, Html.fromHtml("<font color='blue'>" + html + "</font>"));
     removeMessageIfListIsTooLong();
     notifyMessageListAdapter();
   }
 
-  private void showCommandMessage(AsyncMessage msg) {
-    messageList.add(0, CMD_MESSAGE + DateFormatter.now(appContext) + "\n" + msg.getNode(AsyncMessageNodeKeys.DETAILS));
+  private String formatXML(String input) throws TransformerException {
+    // adapted from http://stackoverflow.com/a/139096
+
+    // add on temporary tags to ensure correct parsing
+    // this is necessary as we are pretty-printing <i>part</i>
+    // of a XML document, so we allow a simple string (content)
+    // and allow multiple children at the "root" level
+    input = "<t>" + input + "</t>";
+
+    Transformer transformer = TransformerFactory.newInstance().newTransformer();
+    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+    StreamResult result = new StreamResult(new StringWriter());
+    StreamSource source = new StreamSource(new StringReader(input));
+    transformer.transform(source, result);
+    String xmlString = result.getWriter().toString();
+
+    // remove temporary tags and newlines at beginning and end
+    xmlString = xmlString.substring(3, xmlString.length()-5).replaceAll("(?m)^\\s*\r?\n", "");
+    if (xmlString.endsWith("\n")) xmlString = xmlString.substring(0, xmlString.length()-2);
+
+    // if this is a one-line string then add a tab to the beginning
+    if (!xmlString.contains("\n")) xmlString = "\t" + xmlString;
+
+    return TextUtils.htmlEncode(xmlString).replace("\n", "<br>").replace("\t", "    ").replace(" ", "&nbsp;");
+  }
+
+    private void showCommandMessage(AsyncMessage msg) {
+    messageList.add(0, Html.fromHtml(   CMD_MESSAGE + DateFormatter.now(appContext) + "<br/>" +
+                                        Html.fromHtml(msg.getNode(AsyncMessageNodeKeys.DETAILS)).toString()));
     removeMessageIfListIsTooLong();
     notifyMessageListAdapter();
   }
@@ -492,8 +552,11 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
    * @param msg AsyncMessage object which can be parsed to get additional data.
    */
   private void addTextMessage(AsyncMessage msg) {
-    messageList.add(0, DateFormatter.formatForDisplay(msg.getNode(AsyncMessageNodeKeys.SENT_WITH_TYPE_INFO), appContext)
-        + "\n" + msg.getNode(AsyncMessageNodeKeys.FROM) + ":\n" + msg.getNode(AsyncMessageNodeKeys.MESSAGE));
+    messageList.add(0, Html.fromHtml(DateFormatter.formatForDisplay(msg.getNode(AsyncMessageNodeKeys.SENT_WITH_TYPE_INFO), appContext) + "<br/>" +
+                            msg.getNode(AsyncMessageNodeKeys.FROM) + ":<br/>" +
+                            Html.fromHtml(msg.getNode(AsyncMessageNodeKeys.MESSAGE)).toString()
+            )
+    );
   }
 
   /**
