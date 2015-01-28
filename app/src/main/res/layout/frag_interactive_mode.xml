@@ -16,28 +16,170 @@
 
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:paddingTop="0dp"
     >
 
-    <TextView
-        android:id="@+id/deviceName"
-        android:textColor="@color/nice_gray"
-        android:layout_marginTop="5dp"
-        android:layout_gravity="center_horizontal"
-        android:textSize="@dimen/interactive_mode_button_text_size"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="5dp" />
 
-       <fragment
-            android:id="@+id/mapFragment"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+
+        <RelativeLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="30dp">
+
+            <TextView
+                android:id="@+id/deviceName"
+                android:textColor="@color/nice_gray"
+                android:layout_gravity="center_horizontal"
+                android:textSize="@dimen/interactive_mode_button_text_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WiFire_FFFFFF"
+                android:autoText="false"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"/>
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/GPSConnectionView"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/ic_action_location_searching" />
+
+            <TextView
+                android:id="@+id/satelliteCount"
+                android:textColor="@color/nice_gray"
+                android:layout_gravity="center_horizontal"
+                android:textSize="@dimen/interactive_mode_button_text_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:autoText="false"
+                android:layout_centerVertical="true"
+                android:layout_toLeftOf="@+id/GPSConnectionView"
+                android:layout_toStartOf="@+id/GPSConnectionView" />
 
 
+
+        </RelativeLayout>
+
+
+
+        <FrameLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <fragment
+                android:id="@+id/mapFragment"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"/>
+
+
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_gravity="left|bottom">
+
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:layout_gravity="bottom|left">
+
+                    <at.markushi.ui.CircleButton
+                        android:layout_width="64dip"
+                        android:layout_height="64dip"
+                        android:src="@drawable/ic_action_place"
+                        app:cb_color="@color/light_nice_gray"
+
+                        app:cb_pressedRingWidth="8dip"
+
+                        android:id="@+id/saveLocationButton"/>
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:text="@string/saveLocationText"
+                        android:id="@+id/saveLocationTextView" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:layout_gravity="bottom|left">
+
+                    <at.markushi.ui.CircleButton
+                        android:layout_width="64dip"
+                        android:layout_height="64dip"
+                        android:src="@drawable/ic_action_play"
+                        app:cb_color="@color/light_nice_gray"
+                        app:cb_pressedRingWidth="8dip"
+
+                        android:id="@+id/playHistoryButton" />
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:text="@string/playHistoryText"
+                        android:id="@+id/playHistoryTextView" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+        </FrameLayout  >
+
+        <!--     <GridLayout
+                 android:orientation="horizontal"
+                 android:layout_width="match_parent"
+                 android:layout_height="50dp">
+
+                 <Button
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:text="@string/playHistoryString"
+                     android:drawableLeft="@drawable/ic_action_play"
+
+                     android:id="@+id/playHistory" />
+
+                 <Button
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:text="@string/manualSaveString"
+                     android:drawableLeft="@drawable/ic_action_place"
+                     android:id="@+id/button"
+                     android:layout_row="0"
+                     android:layout_column="2" />
+
+
+             </GridLayout> -->
+
+
+    </LinearLayout>
 
 </LinearLayout>

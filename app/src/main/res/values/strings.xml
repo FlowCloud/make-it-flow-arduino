@@ -248,4 +248,9 @@
     <string name="title_activity_map">Map</string>
     <string name="maps_button_text">Maps</string>
 
+    <string name="playHistoryString">Play location history</string>
+    <string name="manualSaveString">Save currernt location</string>
+    <string name="playHistoryText">Play location history</string>
+    <string name="saveLocationText">Save current WiFire location</string>
+
 </resources>

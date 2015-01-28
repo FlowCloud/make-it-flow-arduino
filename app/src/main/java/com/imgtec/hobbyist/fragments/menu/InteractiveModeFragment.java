@@ -28,6 +28,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -115,6 +117,10 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private MarkerOptions phoneLocation;
     private TreeMap<Date, Marker> positionMarkers;
     private Polyline trackingLine;
+    
+    private TextView sataliteCount;
+    private ImageView gpsIcon;
+    private View rootView;
 
     public static InteractiveModeFragment newInstance() {
         return new InteractiveModeFragment();
@@ -122,25 +128,37 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.frag_interactive_mode, container, false);
+        if (rootView == null) {
+            rootView = inflater.inflate(R.layout.frag_interactive_mode, container, false);
 
-        deviceName = (TextView) rootView.findViewById(R.id.deviceName);
-        googleMap = ((SupportMapFragment)getActivity().getSupportFragmentManager().findFragmentById(R.id.mapFragment)).getMap();
-        if(googleMap == null) {
-            Toast.makeText(getActivity().getApplicationContext(),
-                    "Error creating map", Toast.LENGTH_SHORT).show();
+            deviceName = (TextView) rootView.findViewById(R.id.deviceName);
+            sataliteCount = (TextView) rootView.findViewById(R.id.satelliteCount);
+            gpsIcon = (ImageView) rootView.findViewById(R.id.satellite);
+
+            googleMap = ((SupportMapFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.mapFragment)).getMap();
+            if (googleMap == null) {
+                Toast.makeText(getActivity().getApplicationContext(),
+                        "Error creating map", Toast.LENGTH_SHORT).show();
+            }
+
+            positionMarkers = new TreeMap<>();
+            trackingLine = googleMap.addPolyline(new PolylineOptions()
+                            .color(Color.DKGRAY)
+                            .width(2)
+            );
+
+     /*   ((Button)rootView.findViewById(R.id.playHistory)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });*/
+
+            locationClient = new LocationClient(getActivity(), this, this);
+            locationRequest = LocationRequest.create();
+            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            locationRequest.setInterval(UPDATE_INTERVAL_IN_SECONDS * 1000);
         }
-
-        positionMarkers = new TreeMap<>();
-        trackingLine =  googleMap.addPolyline(new PolylineOptions()
-                        .color(Color.DKGRAY)
-                        .width(2)
-        );
-
-        locationClient = new LocationClient(getActivity(), this, this);
-        locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(UPDATE_INTERVAL_IN_SECONDS * 1000);
 
         return rootView;
     }
@@ -253,7 +271,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
     @Override
     public void onBackgroundExecutionResult(final List<GPSReading> gpsReadings, int taskCode) {
-        if (gpsReadings != null) {
+        if (gpsReadings != null && getActivity() != null) {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -282,21 +300,22 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
             ArrayList<LatLng> points = new ArrayList<>();
 
-            // update the hues of each of the markers to show age
-            Date oldestDate = positionMarkers.firstKey();
-            Date newestDate = positionMarkers.lastKey();//new Date();
-            for (Map.Entry<Date, Marker> kv : positionMarkers.entrySet()) {
-                // iterate the markers in order
-                Date date = kv.getKey();
-                Marker marker = kv.getValue();
-                marker.setIcon(
-                        BitmapDescriptorFactory.defaultMarker(
-                                getHueFromTimestamp(date, newestDate, oldestDate)
-                        )
-                );
-                points.add(marker.getPosition());
+            if (!positionMarkers.isEmpty()) {
+                // update the hues of each of the markers to show age
+                Date oldestDate = positionMarkers.firstKey();
+                Date newestDate = positionMarkers.lastKey();//new Date();
+                for (Map.Entry<Date, Marker> kv : positionMarkers.entrySet()) {
+                    // iterate the markers in order
+                    Date date = kv.getKey();
+                    Marker marker = kv.getValue();
+                    marker.setIcon(
+                            BitmapDescriptorFactory.defaultMarker(
+                                    getHueFromTimestamp(date, newestDate, oldestDate)
+                            )
+                    );
+                    points.add(marker.getPosition());
+                }
             }
-
             trackingLine.setPoints(points);
         }
     }
