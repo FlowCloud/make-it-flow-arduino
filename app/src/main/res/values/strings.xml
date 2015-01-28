@@ -247,5 +247,6 @@
   <string name="response_buffer_full">SEND BUFFER FULL PLEASE WAIT</string>
   <string name="response_offline">BOARD IS OFFLINE WILL DELIVER ONCE BOARD IS ONLINE</string>
   <string name="response_failed">SEND FAILED</string>
+    <string name="xmlParametersPrompt">Enter your XML parameters here</string>
 
 </resources>

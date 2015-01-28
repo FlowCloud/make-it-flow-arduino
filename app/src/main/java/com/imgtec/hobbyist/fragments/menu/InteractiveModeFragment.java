@@ -15,13 +15,16 @@
 package com.imgtec.hobbyist.fragments.menu;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -33,6 +36,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -116,6 +120,8 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
 
   private FlowHelper flowHelper;
   private Handler handler = new Handler();
+  private Button parametersButton;
+  private String commandParameters;
 
   public static InteractiveModeFragment newInstance() {
     return new InteractiveModeFragment();
@@ -132,6 +138,8 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
     sendButton = (Button) rootView.findViewById(R.id.sendCommandsButton);
     clearButton = (Button) rootView.findViewById(R.id.clearCommandsButton);
     messagesListView = (ListView) rootView.findViewById(R.id.messagesListView);
+    parametersButton = (Button) rootView.findViewById(R.id.parametersButton);
+
     return rootView;
   }
 
@@ -260,6 +268,28 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
   }
 
   private void initButtonsListeners() {
+    parametersButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        final EditText input = new EditText(getActivity());
+        if (commandParameters == null){
+          input.setText("");
+        } else {
+          input.setText(commandParameters);
+        }
+        new AlertDialog.Builder(getActivity())
+                .setTitle("Set parameters")
+                .setMessage("Enter your desired XML parameters")
+                .setView(input)
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                  public void onClick(DialogInterface dialog, int whichButton) {
+                    Editable value = input.getText();
+                    commandParameters = value.toString();
+                  }
+                }).show();
+      }
+    });
+
     /**
      * Click sends message written in {@link #messageText}.
      */
@@ -268,8 +298,9 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
       public void onClick(View v) {
         showMessagesListAndEnableClearButton();
         final String commandString = commandEditText.getText().toString();
+        final String paramsString = commandParameters;
         if (isCommandMode && !commandString.equals("")) {
-          sendCommandMessage(commandString);
+          sendCommandMessage(commandString, paramsString);
           setCommandUIEnabled(false);
         } else if (!isCommandMode && !recipientName.equals("")) {
           ActivitiesAndFragmentsHelper.hideSoftInput(appContext, messageText);
@@ -317,16 +348,17 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
   /**
    * Send AsyncMessage command to Flow.
    */
-  private void sendCommandMessage(final String input) {
+  private void sendCommandMessage(final String input, final String paramsString) {
     BackgroundExecutor.execute(new ExternalRun() {
       @Override
       public void execute() {
         try {
           String command = Command.prepareCommand(input);
           AsyncMessage asyncMsg = flowHelper.createAsyncCommandMessage(command);
+          if (paramsString != null) asyncMsg.addNode("commandparams", paramsString);
           boolean isAsyncMessageSent = flowHelper.postAsyncMessage(asyncMsg);
           if (isAsyncMessageSent) {
-            showCommandTXMessage(input);
+            showCommandTXMessage(input, paramsString);
           } else {
             ActivitiesAndFragmentsHelper.showToast(appContext, R.string.message_send_other_problem, handler);
           }
@@ -344,11 +376,25 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
    * Add message to messageList and update UI adhered to messageListAdapter.
    *
    * @param commandString previously sent command text.
+   * @param params
    */
-  private void showCommandTXMessage(String commandString) {
-    messageList.add(0,  Html.fromHtml("<font color='#006400'>" + TX_MESSAGE + "<br/>" +
-                        DateFormatter.now(appContext) + "<br/>" +
-                        TextUtils.htmlEncode(commandString) + "<br/></font>"));
+  private void showCommandTXMessage(String commandString, String params) {
+    String html =   "<font color='#006400'>" + TX_MESSAGE + "<br/>" +
+                    DateFormatter.now(appContext) + "<br/>" +
+                    TextUtils.htmlEncode(commandString) + "<br/></font>";
+    if (params != null && !params.equals("")) {
+      try {
+        html += "</font><font color='#228B22'>" + formatXML(params) + "</font>";
+      } catch (TransformerException e) {
+        e.printStackTrace();
+        Log.e("InteractiveModeFragment.showCommandTXMessage", "Failed to format command parameters", e);
+        html += "</font><font color='red'>Error formatting \"" + params + "\"</font>";
+      }
+    } else {
+      html += "</font><font color='black'>No command parameters</font>";
+    }
+
+    messageList.add(0, Html.fromHtml(html));
     removeMessageIfListIsTooLong();
     notifyMessageListAdapter();
   }
@@ -449,11 +495,11 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
   private String formatXML(String input) throws TransformerException {
     // adapted from http://stackoverflow.com/a/139096
 
-    // add on temporary tags to ensure correct parsing
-    // this is necessary as we are pretty-printing <i>part</i>
-    // of a XML document, so we allow a simple string (content)
-    // and allow multiple children at the "root" level
-    input = "<t>" + input + "</t>";
+    // as we are pretty-printing <i>part</i> of a XML
+    // document we allow a simple string (content)
+    if (!input.contains("<")) {
+      return "&nbsp;&nbsp;&nbsp;&nbsp;" + input;
+    }
 
     Transformer transformer = TransformerFactory.newInstance().newTransformer();
     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -464,8 +510,8 @@ public class InteractiveModeFragment extends NDListeningFragment implements Asyn
     transformer.transform(source, result);
     String xmlString = result.getWriter().toString();
 
-    // remove temporary tags and newlines at beginning and end
-    xmlString = xmlString.substring(3, xmlString.length()-5).replaceAll("(?m)^\\s*\r?\n", "");
+    // remove newlines at beginning and end
+    xmlString = xmlString.replaceAll("(?m)^\\s*\r?\n", "");
     if (xmlString.endsWith("\n")) xmlString = xmlString.substring(0, xmlString.length()-2);
 
     // if this is a one-line string then add a tab to the beginning

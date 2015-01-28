@@ -51,104 +51,132 @@
             />
     </RadioGroup>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="@drawable/interactive_mode_buttons_bottom_line"
-        android:layout_marginLeft="@dimen/interactive_mode_side_space"
-        android:layout_marginRight="@dimen/interactive_mode_side_space"
-        >
-
-      <TextView
-          android:id="@+id/deviceName"
-          android:textColor="@color/nice_gray"
-          android:layout_marginTop="10dp"
-          android:layout_gravity="center_horizontal"
-          android:textSize="@dimen/interactive_mode_button_text_size"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"/>
-
-        <com.imgtec.hobbyist.views.InstantAutoCompleteTextView
-            style="@style/RoundedEditText"
-            android:id="@+id/commandTextButton"
-            android:hint="@string/select_command"
-            android:textColorHint="@color/nice_green"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="15dp"
-            android:gravity="left"
-            android:maxLength="64"
-            android:imeOptions="actionDone"
-            android:inputType="textNoSuggestions"
-            />
-
-        <Button
-            style="@style/RoundedEditText"
-            android:id="@+id/searchUsersButton"
-            android:text="@string/search_users"
-            android:textColor="@color/nice_green"
-            android:layout_marginTop="25dp"
-            android:layout_marginBottom="15dp"
-            android:gravity="left"
-            android:visibility="gone"
-            />
-
-        <EditText
-            style="@style/RoundedEditText"
-            android:id="@+id/messageText"
-            android:inputType="text"
-            android:hint="@string/type_a_message"
-            android:textColorHint="@color/nice_green"
-            android:layout_marginBottom="15dp"
-            android:visibility="gone"
-            />
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
 
         <LinearLayout
-            android:id="@+id/controlPanel"
-            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="@drawable/interactive_mode_buttons_bottom_line"
+            android:layout_marginLeft="@dimen/interactive_mode_side_space"
+            android:layout_marginRight="@dimen/interactive_mode_side_space"
             >
 
-            <Button
-                android:id="@+id/sendCommandsButton"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="@dimen/button_height"
-                android:text="@string/send_button_text"
-                android:layout_marginBottom="15dp"
-                android:layout_marginRight="15dp"
-                android:textColor="@android:color/white"
-                android:background="@drawable/green_and_grey_button_selector"
-                />
+            <TextView
+              android:id="@+id/deviceName"
+              android:textColor="@color/nice_gray"
+              android:layout_marginTop="10dp"
+              android:layout_gravity="center_horizontal"
+              android:textSize="@dimen/interactive_mode_button_text_size"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:weightSum="1">
+
+                <com.imgtec.hobbyist.views.InstantAutoCompleteTextView
+                    style="@style/RoundedEditText"
+                    android:id="@+id/commandTextButton"
+                    android:hint="@string/select_command"
+                    android:textColorHint="@color/nice_green"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="15dp"
+                    android:gravity="left"
+                    android:maxLength="64"
+                    android:imeOptions="actionDone"
+                    android:inputType="textNoSuggestions"
+                    android:layout_width="fill_parent"
+                    android:layout_weight="0.63"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
 
             <Button
-                android:id="@+id/clearCommandsButton"
-                android:layout_width="@dimen/button_height"
-                android:layout_height="@dimen/button_height"
-                android:text="@string/C_letter"
+                style="@style/RoundedEditText"
+                android:id="@+id/searchUsersButton"
+                android:text="@string/search_users"
+                android:textColor="@color/nice_green"
+                android:layout_marginTop="25dp"
                 android:layout_marginBottom="15dp"
-                android:textColor="@android:color/white"
-                android:enabled="false"
-                android:background="@drawable/gray_disabled_purple_enabled_selector"
+                android:gravity="left"
+                android:visibility="gone"
                 />
+
+            <EditText
+                style="@style/RoundedEditText"
+                android:id="@+id/messageText"
+                android:inputType="text"
+                android:hint="@string/type_a_message"
+                android:textColorHint="@color/nice_green"
+                android:layout_marginBottom="15dp"
+                android:visibility="gone"
+                />
+
+            <LinearLayout
+                android:id="@+id/controlPanel"
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                >
+
+                <Button
+                    android:id="@+id/parametersButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Parameters"
+                    android:layout_marginBottom="15dp"
+                    android:textColor="@android:color/white"
+                    android:background="@drawable/green_and_grey_button_not_pressed"
+                    android:paddingLeft="5dp"
+                    android:paddingRight="5dp"
+                    android:layout_marginRight="10dp"/>
+
+                <Button
+                    android:id="@+id/sendCommandsButton"
+                    android:layout_weight="0.35"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/button_height"
+                    android:text="@string/send_button_text"
+                    android:layout_marginBottom="15dp"
+                    android:layout_marginRight="10dp"
+                    android:textColor="@android:color/white"
+                    android:background="@drawable/green_and_grey_button_selector"
+                    />
+
+                <Button
+                    android:id="@+id/clearCommandsButton"
+                    android:layout_width="@dimen/button_height"
+                    android:layout_height="@dimen/button_height"
+                    android:text="@string/C_letter"
+                    android:layout_marginBottom="15dp"
+                    android:textColor="@android:color/white"
+                    android:enabled="false"
+                    android:background="@drawable/gray_disabled_purple_enabled_selector"
+                    />
+
+            </LinearLayout>
+
+
+            <ListView
+                android:id="@+id/messagesListView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@null"
+                android:dividerHeight="0dp"
+                android:background="@drawable/stroke_shape"
+                android:layout_marginBottom="15dp"
+                android:visibility="gone"
+                >
+            </ListView>
+
 
         </LinearLayout>
 
-
-        <ListView
-            android:id="@+id/messagesListView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:divider="@null"
-            android:dividerHeight="0dp"
-            android:background="@drawable/stroke_shape"
-            android:layout_marginBottom="15dp"
-            android:visibility="gone"
-            >
-        </ListView>
-
-
-    </LinearLayout>
+    </FrameLayout>
 
 </LinearLayout>
