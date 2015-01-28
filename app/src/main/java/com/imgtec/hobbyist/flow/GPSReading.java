@@ -24,6 +24,11 @@ public class GPSReading {
     private double lat;
     private double lng;
     private Date dateTime;
+    private double hdop;
+    private double course;
+    private double speed;
+    private int satellites;
+    private double altitude;
 
 
     public GPSReading(String xml) throws XmlPullParserException, IOException, ParseException {
@@ -43,10 +48,51 @@ public class GPSReading {
                 readDateTime(parser);
             } else if (name.equals("Location")) {
                 readLocation(parser);
+            } else if (name.equals("Satellites")){
+                readSatellites(parser);
+            } else if (name.equals("Altitude")){
+                readAltitude(parser);
+            } else if (name.equals("Speed")){
+                readSpeed(parser);
+            } else if (name.equals("Course")){
+                readCourse(parser);
+            } else if (name.equals("HDOP")){
+                readHDOP(parser);
             }
         }
 
     }
+
+    private void readHDOP(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "HDOP");
+        hdop = Double.parseDouble(readText(parser));
+        parser.require(XmlPullParser.END_TAG, ns, "HDOP");
+    }
+
+    private void readCourse(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "Course");
+        course = Double.parseDouble(readText(parser));
+        parser.require(XmlPullParser.END_TAG, ns, "Course");
+    }
+
+    private void readSpeed(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "Speed");
+        speed = Double.parseDouble(readText(parser));
+        parser.require(XmlPullParser.END_TAG, ns, "Speed");
+    }
+
+    private void readSatellites(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "Satellites");
+        satellites = Integer.parseInt(readText(parser));
+        parser.require(XmlPullParser.END_TAG, ns, "Satellites");
+    }
+
+    private void readAltitude(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "Altitude");
+        altitude = Double.parseDouble(readText(parser));
+        parser.require(XmlPullParser.END_TAG, ns, "Altitude");
+    }
+
 
     private void readDateTime(XmlPullParser parser) throws IOException, XmlPullParserException, ParseException {
         parser.require(XmlPullParser.START_TAG, ns, "GPSReadingTime");
@@ -90,7 +136,6 @@ public class GPSReading {
         return result;
     }
 
-
     public double getLat() {
         return lat;
     }
@@ -101,5 +146,25 @@ public class GPSReading {
 
     public Date getUTCDateTime() {
         return dateTime;
+    }
+
+    public double getAltitude() {
+        return altitude;
+    }
+
+    public int getSatellites() {
+        return satellites;
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public double getCourse() {
+        return course;
+    }
+
+    public double getHDOP() {
+        return hdop;
     }
 }

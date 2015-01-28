@@ -23,9 +23,9 @@ import android.location.Location;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.widget.ContentLoadingProgressBar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -86,6 +86,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import at.markushi.ui.CircleButton;
+
 /**
  * Fragment used to interact with Board through Flow.
  * There are two modes: Commands and Messages.
@@ -101,17 +103,20 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
     public static final String TAG = "InteractiveModeFragment";
 
+
     private ConnectivityReceiver connectionReceiver;
     private TextView deviceName;
 
     private FlowHelper flowHelper;
     private Handler handler = new Handler();
 
-    private static final int INITIAL_LOCATIONS_LOAD = 0;
+    private static final int INITIAL_LOCATIONS_LOAD_EXECUTOR_ID = 0;
 
     public static final int UPDATE_INTERVAL_IN_SECONDS = 5;
     private static final float MY_LOCATION_COLOR = BitmapDescriptorFactory.HUE_AZURE;
     private static final long MILLIS_AGO_HUE_CEIL = 7 * 24 * 60 * 60 * 1000; // 7 days
+    public static final int REPLAY_SPEED = 500;
+    public static final int REPLAY_PATH_SUBSTEPS = 10;
 
 
     private GoogleMap googleMap;
@@ -126,6 +131,9 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private ImageView gpsIcon;
     private View rootView;
     private ProgressBar loadingInitialLocations;
+
+    private Object playLocationHistoryAnimationToken;
+    private CircleButton playLocationHistoryButton;
 
     public static InteractiveModeFragment newInstance() {
         return new InteractiveModeFragment();
@@ -158,12 +166,13 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                         .width(2)
         );
 
-     /*   ((Button)rootView.findViewById(R.id.playHistory)).setOnClickListener(new View.OnClickListener() {
+        playLocationHistoryButton = ((CircleButton)rootView.findViewById(R.id.playHistoryButton));
+        playLocationHistoryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                playLocationHistory();
             }
-        });*/
+        });
 
         locationClient = new LocationClient(getActivity(), this, this);
         locationRequest = LocationRequest.create();
@@ -264,7 +273,110 @@ public class InteractiveModeFragment extends NDListeningFragment implements
      * ------------------------------------------------- Map UI --------------------------------------------------*
      */
 
+    private void playLocationHistory() {
+        playLocationHistoryButton.setEnabled(false);
+        if (playLocationHistoryAnimationToken != null){
+            // cancel running animations
+            handler.removeCallbacksAndMessages(playLocationHistoryAnimationToken);
+            playLocationHistoryAnimationToken = null;
 
+            // and fix the map once everything will have finished
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    updateMap(null);
+                    for (Marker marker : positionMarkers.values()){
+                        marker.setVisible(true);
+                    }
+                    playLocationHistoryButton.setImageResource(R.drawable.ic_action_play);
+                    playLocationHistoryButton.setEnabled(true);
+                }
+            }, 100);
+
+
+
+        } else {
+            playLocationHistoryAnimationToken = new Object();
+            playLocationHistoryButton.setImageResource(R.drawable.ic_action_stop);
+            playLocationHistoryButton.setEnabled(true);
+
+            // clear points
+            ArrayList<LatLng> points = new ArrayList<LatLng>();
+            points.add(trackingLine.getPoints().get(0));
+            points.add(trackingLine.getPoints().get(0));
+            trackingLine.setPoints(points);
+            for (Marker marker : positionMarkers.values()){
+                marker.setVisible(false);
+            }
+            LatLngBounds.Builder bounds = LatLngBounds.builder();
+            animateToNextMarker(positionMarkers.firstKey(), bounds);
+        }
+    }
+
+    private void animateToNextMarker(final Date currentPointDate, final LatLngBounds.Builder bounds) {
+        final Marker currentMarker = positionMarkers.get(currentPointDate);
+
+        bounds.include(currentMarker.getPosition());
+        final long timeToAddNextPoint = SystemClock.uptimeMillis() + REPLAY_SPEED;
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 100), REPLAY_SPEED, new GoogleMap.CancelableCallback() {
+            @Override
+            public void onFinish() {
+                handler.postAtTime(new Runnable() {
+                    @Override
+                    public void run() {
+                        // clean up anything that might still be running
+                        handler.removeCallbacksAndMessages(playLocationHistoryAnimationToken);
+
+                        List<LatLng> points = trackingLine.getPoints();
+                        points.set(points.size()-1, currentMarker.getPosition());
+                        points.add(currentMarker.getPosition());
+                        trackingLine.setPoints(points);
+                        currentMarker.setVisible(true);
+
+                        Date nextPointDate = positionMarkers.higherKey(currentPointDate);
+                        if (nextPointDate == null || playLocationHistoryButton == null){
+                            onCancel();
+                        } else {
+                            animateToNextMarker(nextPointDate, bounds);
+                        }
+                    }
+                }, playLocationHistoryAnimationToken, timeToAddNextPoint);
+            }
+
+            @Override
+            public void onCancel() {
+                handler.removeCallbacksAndMessages(playLocationHistoryAnimationToken);
+
+                for (Marker marker : positionMarkers.values()){
+                    marker.setVisible(true);
+                }
+                playLocationHistoryAnimationToken = null;
+                playLocationHistoryButton.setImageResource(R.drawable.ic_action_play);
+            }
+        });
+
+        List<LatLng> points = trackingLine.getPoints();
+        animatePathTo(playLocationHistoryAnimationToken, points.get(points.size() - 2), currentMarker.getPosition(), 0);
+    }
+
+    private void animatePathTo(final Object lerpAnimationToken, final LatLng begin, final LatLng end, final int step) {
+        double lerp = (double)step/(double)REPLAY_PATH_SUBSTEPS;
+
+        double latLerp = begin.latitude + lerp * (end.latitude - begin.latitude);
+        double lngLerp = begin.longitude + lerp * (end.longitude - begin.longitude);
+
+        List<LatLng> points = trackingLine.getPoints();
+        points.set(points.size() - 1, new LatLng(latLerp, lngLerp));
+        trackingLine.setPoints(points);
+        handler.postAtTime(new Runnable() {
+            @Override
+            public void run() {
+                if (step < REPLAY_PATH_SUBSTEPS && playLocationHistoryAnimationToken != null) {
+                    animatePathTo(lerpAnimationToken, begin, end, step + 1);
+                }
+            }
+        }, lerpAnimationToken, SystemClock.uptimeMillis() + REPLAY_SPEED / REPLAY_PATH_SUBSTEPS);
+    }
 
     private void fetchLocations() {
         final Activity context = getActivity();
@@ -290,7 +402,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                     return null;
                 }
             }
-        }, this, INITIAL_LOCATIONS_LOAD, context);
+        }, this, INITIAL_LOCATIONS_LOAD_EXECUTOR_ID, context);
     }
 
     @Override
@@ -300,7 +412,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                 @Override
                 public void run() {
                     updateMap(gpsReadings);
-                    if (taskCode == INITIAL_LOCATIONS_LOAD){
+                    if (taskCode == INITIAL_LOCATIONS_LOAD_EXECUTOR_ID){
                         loadingInitialLocations.setVisibility(View.GONE);
                         zoomToMarkers(positionMarkers.values());
                     }
@@ -314,23 +426,43 @@ public class InteractiveModeFragment extends NDListeningFragment implements
         for (Marker marker : markers){
             bounds.include(marker.getPosition());
         }
-        googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 100));
+        if (playLocationHistoryAnimationToken == null) {
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 100), new GoogleMap.CancelableCallback() {
+                @Override
+                public void onFinish() {
+                }
+
+                @Override
+                public void onCancel() {
+                }
+            });
+        }
     }
 
     private void updateMap(List<GPSReading> gpsReadings) {
         if (googleMap != null) {
 
             // create new markers
-            for (GPSReading gpsReading : gpsReadings) {
-                Date date = gpsReading.getUTCDateTime();
-                if (!positionMarkers.containsKey(date)) {
-                    MarkerOptions markerOptions = (new MarkerOptions()
-                            .position(new LatLng(
-                                    gpsReading.getLat(),
-                                    gpsReading.getLng()))
-                            .title(date.toString())
-                            .draggable(false));
-                    positionMarkers.put(date, googleMap.addMarker(markerOptions));
+            if (gpsReadings != null) {
+                for (GPSReading gpsReading : gpsReadings) {
+                    Date date = gpsReading.getUTCDateTime();
+                    if (!positionMarkers.containsKey(date)) {
+                        MarkerOptions markerOptions = (new MarkerOptions()
+                                .position(new LatLng(
+                                        gpsReading.getLat(),
+                                        gpsReading.getLng()))
+                                .title(gpsReading.getUTCDateTime().toString())
+                                .snippet(String.format(
+                                        "Altitude: %.1f  " +
+                                                "Speed: %.2fm/s  " +
+                                                "  " +
+                                                "Satalites: %d  " +
+                                                "HDOP: %d"
+                                        , gpsReading.getAltitude(), gpsReading.getSpeed(),
+                                        gpsReading.getSatellites(), (int) gpsReading.getHDOP()))
+                                .draggable(false));
+                        positionMarkers.put(date, googleMap.addMarker(markerOptions));
+                    }
                 }
             }
 
