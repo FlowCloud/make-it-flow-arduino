@@ -63,7 +63,7 @@
                 android:textSize="@dimen/interactive_mode_button_text_size"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0"
+                android:text="\?"
                 android:autoText="false"
                 android:layout_centerVertical="true"
                 android:layout_toLeftOf="@+id/GPSConnectionView"
@@ -87,7 +87,6 @@
                 android:name="com.google.android.gms.maps.SupportMapFragment"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"/>
-
 
 
             <LinearLayout
@@ -115,12 +114,13 @@
                         android:id="@+id/saveLocationButton"/>
 
                     <TextView
-                        android:layout_width="100dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center"
+                        android:gravity="center_vertical"
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         android:text="@string/saveLocationText"
-                        android:id="@+id/saveLocationTextView" />
+                        android:id="@+id/saveLocationTextView"
+                        android:layout_marginLeft="-5dp" />
 
                 </LinearLayout>
 
@@ -140,16 +140,25 @@
                         android:id="@+id/playHistoryButton" />
 
                     <TextView
-                        android:layout_width="100dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center"
+                        android:gravity="center_vertical"
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         android:text="@string/playHistoryText"
-                        android:id="@+id/playHistoryTextView" />
+                        android:id="@+id/playHistoryTextView"
+                        android:layout_marginLeft="-5dp" />
 
                 </LinearLayout>
 
             </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/loadingInitialLocations"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center" />
 
 
         </FrameLayout  >

@@ -40,6 +40,8 @@ android {
     }
 }
 
+
+
 dependencies {
     // Network
 
@@ -60,5 +62,4 @@ dependencies {
     compile 'net.hockeyapp.android:HockeySDK:3.0.1'
 
     compile 'com.github.markushi:circlebutton:1.1'
-    //compile 'com.thoughtworks.xstream:xstream:1.2.2'
 }

@@ -24,12 +24,14 @@ import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.widget.ContentLoadingProgressBar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,10 +40,12 @@ import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -76,8 +80,8 @@ import com.imgtec.hobbyist.utils.WifiUtil;
 import com.google.android.gms.maps.model.Marker;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -118,34 +122,41 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private TreeMap<Date, Marker> positionMarkers;
     private Polyline trackingLine;
     
-    private TextView sataliteCount;
+    private TextView satelliteCount;
     private ImageView gpsIcon;
     private View rootView;
+    private ProgressBar loadingInitialLocations;
 
     public static InteractiveModeFragment newInstance() {
         return new InteractiveModeFragment();
     }
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        if (rootView == null) {
-            rootView = inflater.inflate(R.layout.frag_interactive_mode, container, false);
+        super.onCreateView(inflater, container, savedInstanceState);
+        rootView = inflater.inflate(R.layout.frag_interactive_mode, container, false);
 
-            deviceName = (TextView) rootView.findViewById(R.id.deviceName);
-            sataliteCount = (TextView) rootView.findViewById(R.id.satelliteCount);
-            gpsIcon = (ImageView) rootView.findViewById(R.id.satellite);
+        deviceName = (TextView) rootView.findViewById(R.id.deviceName);
+        satelliteCount = (TextView) rootView.findViewById(R.id.satelliteCount);
+        gpsIcon = (ImageView) rootView.findViewById(R.id.satellite);
+        loadingInitialLocations = (ProgressBar) rootView.findViewById(R.id.loadingInitialLocations);
 
-            googleMap = ((SupportMapFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.mapFragment)).getMap();
-            if (googleMap == null) {
-                Toast.makeText(getActivity().getApplicationContext(),
-                        "Error creating map", Toast.LENGTH_SHORT).show();
-            }
+        googleMap = ((SupportMapFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.mapFragment)).getMap();
+        if (googleMap == null) {
+            Toast.makeText(getActivity().getApplicationContext(),
+                    "Error creating map", Toast.LENGTH_SHORT).show();
+        }
 
-            positionMarkers = new TreeMap<>();
-            trackingLine = googleMap.addPolyline(new PolylineOptions()
-                            .color(Color.DKGRAY)
-                            .width(2)
-            );
+        positionMarkers = new TreeMap<>();
+        trackingLine = googleMap.addPolyline(new PolylineOptions()
+                        .color(Color.DKGRAY)
+                        .width(2)
+        );
 
      /*   ((Button)rootView.findViewById(R.id.playHistory)).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -154,13 +165,26 @@ public class InteractiveModeFragment extends NDListeningFragment implements
             }
         });*/
 
-            locationClient = new LocationClient(getActivity(), this, this);
-            locationRequest = LocationRequest.create();
-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            locationRequest.setInterval(UPDATE_INTERVAL_IN_SECONDS * 1000);
-        }
+        locationClient = new LocationClient(getActivity(), this, this);
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(UPDATE_INTERVAL_IN_SECONDS * 1000);
 
         return rootView;
+    }
+
+    @Override
+    public void onDestroyView() {
+        FragmentManager fm = getActivity().getSupportFragmentManager();
+
+        // because we add a fragment in the XML and InteractiveModeFragment is recreated
+        // each time we need to remove the map fragment
+        Fragment mapFragment = fm.findFragmentById(R.id.mapFragment);
+        if (mapFragment != null) {
+            fm.beginTransaction().remove(mapFragment).commit();
+        }
+
+        super.onDestroyView();
     }
 
     @Override
@@ -270,15 +294,27 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     }
 
     @Override
-    public void onBackgroundExecutionResult(final List<GPSReading> gpsReadings, int taskCode) {
+    public void onBackgroundExecutionResult(final List<GPSReading> gpsReadings, final int taskCode) {
         if (gpsReadings != null && getActivity() != null) {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     updateMap(gpsReadings);
+                    if (taskCode == INITIAL_LOCATIONS_LOAD){
+                        loadingInitialLocations.setVisibility(View.GONE);
+                        zoomToMarkers(positionMarkers.values());
+                    }
                 }
             });
         }
+    }
+
+    private void zoomToMarkers(Collection<Marker> markers) {
+        LatLngBounds.Builder bounds = LatLngBounds.builder();
+        for (Marker marker : markers){
+            bounds.include(marker.getPosition());
+        }
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 100));
     }
 
     private void updateMap(List<GPSReading> gpsReadings) {
