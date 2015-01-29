@@ -19,19 +19,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import java.text.DateFormat;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,46 +53,51 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.imgtec.flow.MessagingEvent;
-import com.imgtec.flow.client.core.Core;
-import com.imgtec.flow.client.core.FlowException;
 import com.imgtec.flow.client.users.DataStore;
 import com.imgtec.flow.client.users.DataStoreItem;
 import com.imgtec.flow.client.users.DataStoreItems;
-import com.imgtec.flow.client.users.Device;
-import com.imgtec.flow.client.users.User;
 import com.imgtec.hobbyist.R;
 import com.imgtec.hobbyist.activities.ActivitiesAndFragmentsHelper;
 import com.imgtec.hobbyist.activities.FlowActivity;
 import com.imgtec.hobbyist.flow.AsyncMessage;
 import com.imgtec.hobbyist.flow.AsyncMessageListener;
-import com.imgtec.hobbyist.flow.Command;
 import com.imgtec.hobbyist.flow.DevicePresenceListener;
-import com.imgtec.hobbyist.flow.FlowEntities;
 import com.imgtec.hobbyist.flow.FlowHelper;
 import com.imgtec.hobbyist.flow.GPSReading;
+import com.imgtec.hobbyist.flow.Geofence;
 import com.imgtec.hobbyist.fragments.navigationdrawer.NDListeningFragment;
 import com.imgtec.hobbyist.fragments.navigationdrawer.NDMenuItem;
 import com.imgtec.hobbyist.utils.BackgroundExecutor;
 import com.imgtec.hobbyist.utils.BroadcastReceiverWithRegistrationState;
-import com.imgtec.hobbyist.utils.DebugLogger;
-import com.imgtec.hobbyist.utils.ErrorHtmlLogger;
+import com.imgtec.hobbyist.utils.CatmullRomSpline;
 import com.imgtec.hobbyist.utils.ExternalCall;
 import com.imgtec.hobbyist.utils.ExternalRun;
 import com.imgtec.hobbyist.utils.SimpleFragmentFactory;
 import com.imgtec.hobbyist.utils.WifiUtil;
 import com.google.android.gms.maps.model.Marker;
 
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 
 import at.markushi.ui.CircleButton;
@@ -101,39 +115,89 @@ public class InteractiveModeFragment extends NDListeningFragment implements
         GooglePlayServicesClient.OnConnectionFailedListener,  LocationListener, AsyncMessageListener,
         DevicePresenceListener {
 
+    // **************** Constants  *********************
     public static final String TAG = "InteractiveModeFragment";
+    private static final int INITIAL_LOCATIONS_LOAD_EXECUTOR_ID = 100;
+    private static final int UPDATE_INTERVAL_IN_SECONDS = 5;
+    private static final float MY_LOCATION_COLOR = BitmapDescriptorFactory.HUE_AZURE;
+    private static final float WIFIRE_CURRENT_LOCATION = BitmapDescriptorFactory.HUE_VIOLET;
+    private static final long MILLIS_AGO_HUE_CEIL = 7 * 24 * 60 * 60 * 1000; // 7 days
+    private static final int REPLAY_SPEED = 50;
+    private static final int REPLAY_PATH_SUBSTEPS = 50;
+
+    private static final Object[][] periodSelection = new Object[][]{
+            {"30 seconds",  "15 minutes",           30  *1000, 30},
+            {"1 minute",    "30 minutes",           60  *1000, 30},
+            {"2 minutes",   "1 hour",           2  *60  *1000, 30},
+            {"5 minutes",   "2½ hours",         5  *60  *1000, 30},
+            {"10 minutes",  "5 hours",          10 *60  *1000, 30},
+            {"25 minutes",  "12 hours",         25 *60  *1000, 29},
+            {"1 hour",      "24 hours",         60 *60  *1000, 24},
+    };
 
 
-    private ConnectivityReceiver connectionReceiver;
+    // **************** UI Components  *********************
+    private ImageView gpsIcon;
+    private TextView satelliteCount;
     private TextView deviceName;
+
+    private TextView hdopTextView;
+    private TextView locationTextView;
+    private TextView speedTextView;
+    private TextView altitudeTextView;
+
+    private View rootView;
+    private ProgressBar loadingInitialLocations;
+
+    private ImageView targetImageView;
+    private TableLayout wifireInformationView;
+    private LinearLayout wifireButtonsView;
+
+    private LinearLayout editGeofenceButtons;
+
+    private CircleButton playLocationHistoryButton;
+    private CircleButton inspectPointsButton;
+
+    private Button doneInspectingPointsButton;
+
+    private FrameLayout periodDialog;
+
+
+    // **************** Map components *********************
+    private GoogleMap googleMap;
+
+    private Marker phoneLocation;
+    private MarkerOptions phoneLocationOptions;
+
+    private Marker wifireCurrentLocation;
+    private MarkerOptions wifireCurrentLocationOptions;
+
+    private List<LatLng> points;
+    private TreeMap<Date, Marker> positionMarkers;
+    private Polyline trackingLine;
+
+    private Circle geofenceCircle;
+
+
+
+    // **************** Activity fields  *********************
+    private ConnectivityReceiver connectionReceiver;
 
     private FlowHelper flowHelper;
     private Handler handler = new Handler();
 
-    private static final int INITIAL_LOCATIONS_LOAD_EXECUTOR_ID = 0;
-
-    public static final int UPDATE_INTERVAL_IN_SECONDS = 5;
-    private static final float MY_LOCATION_COLOR = BitmapDescriptorFactory.HUE_AZURE;
-    private static final long MILLIS_AGO_HUE_CEIL = 7 * 24 * 60 * 60 * 1000; // 7 days
-    public static final int REPLAY_SPEED = 500;
-    public static final int REPLAY_PATH_SUBSTEPS = 10;
-
-
-    private GoogleMap googleMap;
     private LocationClient locationClient;
     private LocationRequest locationRequest;
 
-    private MarkerOptions phoneLocation;
-    private TreeMap<Date, Marker> positionMarkers;
-    private Polyline trackingLine;
-    
-    private TextView satelliteCount;
-    private ImageView gpsIcon;
-    private View rootView;
-    private ProgressBar loadingInitialLocations;
-
     private Object playLocationHistoryAnimationToken;
-    private CircleButton playLocationHistoryButton;
+    private List<LatLng> partialSplinePoints;
+    private boolean hasZoomedToMarkers;
+
+    private Map<String, CommandResponseHandler> waitingCommands;
+
+    int saveReadingPeriod;
+    int maximumReadings;
+
 
     public static InteractiveModeFragment newInstance() {
         return new InteractiveModeFragment();
@@ -148,38 +212,13 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         rootView = inflater.inflate(R.layout.frag_interactive_mode, container, false);
-
-        deviceName = (TextView) rootView.findViewById(R.id.deviceName);
-        satelliteCount = (TextView) rootView.findViewById(R.id.satelliteCount);
-        gpsIcon = (ImageView) rootView.findViewById(R.id.satellite);
-        loadingInitialLocations = (ProgressBar) rootView.findViewById(R.id.loadingInitialLocations);
-
-        googleMap = ((SupportMapFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.mapFragment)).getMap();
-        if (googleMap == null) {
-            Toast.makeText(getActivity().getApplicationContext(),
-                    "Error creating map", Toast.LENGTH_SHORT).show();
-        }
-
-        positionMarkers = new TreeMap<>();
-        trackingLine = googleMap.addPolyline(new PolylineOptions()
-                        .color(Color.DKGRAY)
-                        .width(2)
-        );
-
-        playLocationHistoryButton = ((CircleButton)rootView.findViewById(R.id.playHistoryButton));
-        playLocationHistoryButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                playLocationHistory();
-            }
-        });
-
-        locationClient = new LocationClient(getActivity(), this, this);
-        locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(UPDATE_INTERVAL_IN_SECONDS * 1000);
-
+        waitingCommands = new HashMap<>();
         return rootView;
+    }
+
+
+    private String createGeofenceParameters(double lat, double lng, double radius) {
+        return String.format("<geofence><location><latitude>%f</latitude><longitude>%f</longitude></location><radius>%f</radius></geofence>", lat, lng, radius);
     }
 
     @Override
@@ -210,6 +249,41 @@ public class InteractiveModeFragment extends NDListeningFragment implements
         flowHelper.addDevicePresenceListener(this);
         connectionReceiver = new ConnectivityReceiver(new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         connectionReceiver.register(appContext);
+        //online = true;
+        fetchWiFireLocation();
+        sendCommand("GET GEOFENCE", null, new CommandResponseHandler() {
+            @Override
+            public void onCommandResponse(AsyncMessage response) {
+                try {
+                    final Geofence retrievedFence = new Geofence(response.getNode("responseparams"));
+
+                    if (retrievedFence.getRadius() == 0){
+                        showToast("No geofence set on WiFire");
+                    } else {
+                        showToast("Retrieved geofence from WiFire");
+                    }
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (geofenceCircle != null) geofenceCircle.remove();
+                            if (retrievedFence.getRadius() != 0){
+                                geofenceCircle = googleMap.addCircle(new CircleOptions()
+                                                .center(retrievedFence.getLocation())
+                                                .radius(retrievedFence.getRadius())
+                                                .strokeColor(Color.CYAN)
+                                );
+                            }
+                        }
+                    });
+                } catch (XmlPullParserException | IOException e) {
+                    showToast("Failed to fetch geofence from WiFire");
+                    e.printStackTrace();
+                }
+
+
+
+            }
+        });
     }
 
     @Override
@@ -230,8 +304,256 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
     public void initUI() {
         clearUI();
+        deviceName = (TextView) rootView.findViewById(R.id.deviceName);
         setDeviceName();
+
+        gpsIcon = (ImageView) rootView.findViewById(R.id.satellite);
+        satelliteCount = (TextView) rootView.findViewById(R.id.satelliteCount);
+
+        targetImageView = (ImageView) rootView.findViewById(R.id.targetImageView);
+        wifireInformationView = (TableLayout) rootView.findViewById(R.id.wifireInformationView);
+        wifireButtonsView = (LinearLayout) rootView.findViewById(R.id.wifireButtonsView);
+        loadingInitialLocations = (ProgressBar) rootView.findViewById(R.id.loadingInitialLocations);
+
+        hdopTextView = (TextView) rootView.findViewById(R.id.hdopTextView);
+        locationTextView = (TextView) rootView.findViewById(R.id.locationTextView);
+        speedTextView = (TextView) rootView.findViewById(R.id.speedTextView);
+        altitudeTextView = (TextView) rootView.findViewById(R.id.altitudeTextView);
+
+        googleMap = ((SupportMapFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.mapFragment)).getMap();
+        if (googleMap == null) {
+            Toast.makeText(getActivity().getApplicationContext(),
+                    "Error creating map", Toast.LENGTH_SHORT).show();
+        }
+
+        positionMarkers = new TreeMap<>();
+        trackingLine = googleMap.addPolyline(new PolylineOptions()
+                        .color(Color.DKGRAY)
+                        .width(2)
+        );
+
+        initialiseMainMenu();
+
+        initialiseConfigureGeofenceButtons();
+
+        initialiseConfigurePeriodDialog();
+
+        locationClient = new LocationClient(getActivity(), this, this);
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(UPDATE_INTERVAL_IN_SECONDS * 1000);
+
     }
+
+    private void initialiseConfigurePeriodDialog() {
+        periodDialog = (FrameLayout) rootView.findViewById(R.id.periodDialog);
+
+        final TextView periodTextView = ((TextView) rootView.findViewById(R.id.periodTextView));
+        final TextView lengthTextView = ((TextView) rootView.findViewById(R.id.lengthTextView));
+        final SeekBar periodSelectionBar = ((SeekBar) rootView.findViewById(R.id.periodSelectionBar));
+
+        periodSelectionBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                periodTextView.setText((String) periodSelection[progress][0]);
+                lengthTextView.setText((String) periodSelection[progress][1]);
+            }
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        ((Button)rootView.findViewById(R.id.confirmPeriod)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setLoggingPeriod(periodSelectionBar);
+            }
+        });
+
+        setLoggingPeriod(periodSelectionBar);
+    }
+
+    private void setLoggingPeriod(SeekBar periodSelectionBar) {
+        periodDialog.setVisibility(View.INVISIBLE);
+
+        final int index = periodSelectionBar.getProgress();
+        saveReadingPeriod = (int) periodSelection[index][2];
+        maximumReadings = (int) periodSelection[index][3];
+
+        sendCommand("SET PERIOD", "<period>" + saveReadingPeriod + "</period>", new CommandResponseHandler() {
+            @Override
+            public void onCommandResponse(AsyncMessage response) {
+                showToast("Update period set to " + periodSelection[index][0]);
+            }
+        });
+    }
+
+    private void showToast(final String s) {
+        showToast(s, Toast.LENGTH_LONG);
+    }
+
+    private void showToast(final String s, final int length) {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (getActivity() == null) return;
+                Toast.makeText(getActivity().getApplicationContext(), s, length).show();
+            }
+        });
+    }
+
+
+    private void initialiseMainMenu() {
+        ((CircleButton)rootView.findViewById(R.id.setGeofenceButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                targetImageView.setVisibility(View.VISIBLE);
+                editGeofenceButtons.setVisibility(View.VISIBLE);
+                wifireInformationView.setVisibility(View.GONE);
+                wifireButtonsView.setVisibility(View.GONE);
+            }
+        });
+
+        ((CircleButton)rootView.findViewById(R.id.gotoLocationButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                zoomToMarkers();
+            }
+        });
+
+        ((CircleButton) rootView.findViewById(R.id.getLocationButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                fetchWiFireLocation();
+            }
+        });
+
+        playLocationHistoryButton = ((CircleButton)rootView.findViewById(R.id.playHistoryButton));
+        playLocationHistoryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playLocationHistory();
+            }
+        });
+
+        ((CircleButton)rootView.findViewById(R.id.setPeriodButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                periodDialog.setVisibility(View.VISIBLE);
+            }
+        });
+
+
+
+        doneInspectingPointsButton = ((Button)rootView.findViewById(R.id.doneInspectingPointsButton));
+        doneInspectingPointsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                for (Marker mo : positionMarkers.values()){
+                    mo.setVisible(false);
+                }
+                doneInspectingPointsButton.setVisibility(View.GONE);
+                wifireButtonsView.setVisibility(View.VISIBLE);
+            }
+        });
+
+        inspectPointsButton =  ((CircleButton) rootView.findViewById(R.id.inspectPointsButton));
+        inspectPointsButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                for (Marker mo : positionMarkers.values()){
+                    mo.setVisible(true);
+                }
+                doneInspectingPointsButton.setVisibility(View.VISIBLE);
+                wifireButtonsView.setVisibility(View.INVISIBLE);
+            }
+        });
+    }
+
+    private void initialiseConfigureGeofenceButtons() {
+        editGeofenceButtons = (LinearLayout) rootView.findViewById(R.id.editGeofenceButtons);
+        ((Button) rootView.findViewById(R.id.confirmGeofenceButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                targetImageView.setVisibility(View.INVISIBLE);
+                editGeofenceButtons.setVisibility(View.INVISIBLE);
+                wifireInformationView.setVisibility(View.VISIBLE);
+                wifireButtonsView.setVisibility(View.VISIBLE);
+
+                Display display = getActivity().getWindowManager().getDefaultDisplay();
+                Point size = new Point();
+                display.getSize(size);
+                int width = size.x;
+                int height = size.y;
+
+                LatLng left = googleMap.getProjection().fromScreenLocation(new Point(
+                        (int) targetImageView.getX(),
+                        (int) targetImageView.getY() + targetImageView.getHeight() / 2
+                ));
+                final LatLng center = googleMap.getProjection().fromScreenLocation(new Point(
+                        (int) targetImageView.getX() + targetImageView.getWidth() / 2,
+                        (int) targetImageView.getY() + targetImageView.getHeight() / 2
+                ));
+                LatLng right = googleMap.getProjection().fromScreenLocation(new Point(
+                        (int) targetImageView.getX() + targetImageView.getWidth(),
+                        (int) targetImageView.getY() + targetImageView.getHeight() / 2
+                ));
+
+                Location loc1 = new Location(LocationManager.GPS_PROVIDER);
+                Location loc2 = new Location(LocationManager.GPS_PROVIDER);
+
+                loc1.setLatitude(left.latitude);
+                loc1.setLongitude(left.longitude);
+
+                loc2.setLatitude(right.latitude);
+                loc2.setLongitude(right.longitude);
+
+                final float radius = loc1.distanceTo(loc2) / 2;
+                Log.v("promptForGeofence", "the radius is " + radius);
+
+                if (geofenceCircle != null) {
+                    geofenceCircle.remove();
+                }
+                geofenceCircle = googleMap.addCircle(new CircleOptions()
+                                .center(center)
+                                .radius(radius)
+                                .strokeColor(Color.CYAN)
+                );
+
+                sendCommand("SET GEOFENCE", createGeofenceParameters(center.latitude, center.longitude, radius), new CommandResponseHandler() {
+
+                    @Override
+                    public void onCommandResponse(AsyncMessage response) {
+                        showToast("Geofence registered on WiFire");
+                    }
+
+                });
+            }
+        });
+        ((Button) rootView.findViewById(R.id.removeGeofenceButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                targetImageView.setVisibility(View.INVISIBLE);
+                editGeofenceButtons.setVisibility(View.INVISIBLE);
+                wifireInformationView.setVisibility(View.VISIBLE);
+                wifireButtonsView.setVisibility(View.VISIBLE);
+
+                if (geofenceCircle != null) {
+                    geofenceCircle.remove();
+                    geofenceCircle = null;
+
+                    sendCommand("SET GEOFENCE", createGeofenceParameters(0, 0, 0), new CommandResponseHandler() {
+                        @Override
+                        public void onCommandResponse(AsyncMessage response) {
+                            showToast("Geofence removed from WiFire");
+                        }
+                    });
+                }
+            }
+        });
+    }
+
 
     private void setDeviceName() {
         deviceName.setText(flowHelper.getCurrentDevice().getName());
@@ -244,7 +566,112 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     public void onStart() {
         super.onStart();
         locationClient.connect();
-        fetchLocations();
+        fetchWiFireLocationHistory(INITIAL_LOCATIONS_LOAD_EXECUTOR_ID);
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                fetchWiFireLocation();
+                fetchWiFireLocationHistory(0);
+            }
+        }, 0, 30000);
+        //fetchWiFireLocation();
+    }
+
+    private interface CommandResponseHandler {
+        void onCommandResponse(AsyncMessage response);
+    }
+    private void fetchWiFireLocation() {
+        if (getActivity() == null) return;
+        BackgroundExecutor.execute(new ExternalRun() {
+            @Override
+            public void execute() {
+                sendCommand("GET LOCATION", null, new CommandResponseHandler(){
+                    @Override
+                    public void onCommandResponse(AsyncMessage response) {
+                        String code = response.getNode("responsecode");
+                        String params = response.getNode("responseparams");
+
+                        Log.v("CommandResponseHandler.onCommandResponse", "response->responseparams = \"" + params + "\"");
+                        if (code.equals("OK")){
+                            try {
+                                GPSReading currentLocation = new GPSReading(params);
+
+                                updateCurrentLocation(currentLocation);
+
+                                showToast("Updated WiFire location", Toast.LENGTH_SHORT);
+
+                            } catch (XmlPullParserException | IOException | ParseException e) {
+                                Log.e("CommandResponseHandler.onCommandResponse", "Error parsing GPS reading", e);
+                                e.printStackTrace();
+                            }
+                        } else {
+                            Log.e("CommandResponseHandler.onCommandResponse", "Got response code" + code);
+                        }
+
+                    }
+                });
+
+            }
+        });
+    }
+
+    private void updateCurrentLocation(final GPSReading currentLocation) {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                satelliteCount.setText("" + currentLocation.getSatellites());
+
+                hdopTextView.setText(String.format("%3d", (int)currentLocation.getHDOP()));
+                locationTextView.setText(String.format("%3.3f, %3.3f", currentLocation.getLat(), currentLocation.getLng()));
+                speedTextView.setText(String.format("%2.2f m/s", currentLocation.getSpeed()));
+                altitudeTextView.setText(String.format("%4.2f m", currentLocation.getAltitude()));
+
+                LatLng latlng = new LatLng(currentLocation.getLat(), currentLocation.getLng());
+                if (wifireCurrentLocation == null) {
+                    wifireCurrentLocationOptions = new MarkerOptions()
+                            .position(latlng)
+                            .title("WiFire Current Location")
+                            .icon(BitmapDescriptorFactory.defaultMarker(WIFIRE_CURRENT_LOCATION))
+                            .draggable(false);
+                    wifireCurrentLocation = googleMap.addMarker(wifireCurrentLocationOptions);
+                    if (!hasZoomedToMarkers) zoomToMarkers();
+                } else {
+                    wifireCurrentLocationOptions.position(latlng);
+                }
+            }
+        });
+    }
+
+
+    private void sendCommand(final String command, final String commandParams, final CommandResponseHandler onResponse) {
+        final InteractiveModeFragment fthis = this;
+        BackgroundExecutor.execute(new ExternalRun() {
+            @Override
+            public void execute() {
+                // createAsyncCommandMessage can create messages with duplicate request IDs
+                // if the thread switches while between increasing the current ID and assigning
+                // it to the new message
+                synchronized (fthis) {
+
+                    /*if (!online) {
+                        Log.v("InteractiveModeFragment.sendCommand", "Not sending command to " + command + "- device appears to be offline");
+                        return;
+                    }*/
+
+                    AsyncMessage message = flowHelper.createAsyncCommandMessage(command);
+                    if (commandParams != null) message.addNode("commandparams", commandParams);
+
+                    flowHelper.postAsyncMessage(message);
+
+                    waitingCommands.put(message.getRequestId(), onResponse);
+                    Log.v("InteractiveModeFragment.sendCommand", "Sent command \"" + command + "\". Request ID: " + message.getRequestId());
+                    Log.v("InteractiveModeFragment.sendCommand", message.buildXml());
+
+
+                }
+            }
+        });
     }
 
     @Override
@@ -275,123 +702,92 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
     private void playLocationHistory() {
         playLocationHistoryButton.setEnabled(false);
-        if (playLocationHistoryAnimationToken != null){
-            // cancel running animations
+        if (playLocationHistoryAnimationToken != null) {
             handler.removeCallbacksAndMessages(playLocationHistoryAnimationToken);
+            googleMap.stopAnimation();
             playLocationHistoryAnimationToken = null;
 
             // and fix the map once everything will have finished
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    updateMap(null);
-                    for (Marker marker : positionMarkers.values()){
-                        marker.setVisible(true);
-                    }
+                    trackingLine.setPoints(computeSplinePoints());
+
                     playLocationHistoryButton.setImageResource(R.drawable.ic_action_play);
                     playLocationHistoryButton.setEnabled(true);
+                    zoomToMarkers();
                 }
             }, 100);
-
-
-
         } else {
             playLocationHistoryAnimationToken = new Object();
             playLocationHistoryButton.setImageResource(R.drawable.ic_action_stop);
             playLocationHistoryButton.setEnabled(true);
 
-            // clear points
-            ArrayList<LatLng> points = new ArrayList<LatLng>();
-            points.add(trackingLine.getPoints().get(0));
-            points.add(trackingLine.getPoints().get(0));
-            trackingLine.setPoints(points);
-            for (Marker marker : positionMarkers.values()){
-                marker.setVisible(false);
-            }
-            LatLngBounds.Builder bounds = LatLngBounds.builder();
-            animateToNextMarker(positionMarkers.firstKey(), bounds);
+            partialSplinePoints = new ArrayList<>();
+            CatmullRomSpline c = new CatmullRomSpline(points, REPLAY_PATH_SUBSTEPS);
+
+            animatePath(c.iterator(), 0, LatLngBounds.builder());
         }
     }
 
-    private void animateToNextMarker(final Date currentPointDate, final LatLngBounds.Builder bounds) {
-        final Marker currentMarker = positionMarkers.get(currentPointDate);
-
-        bounds.include(currentMarker.getPosition());
-        final long timeToAddNextPoint = SystemClock.uptimeMillis() + REPLAY_SPEED;
-        googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 100), REPLAY_SPEED, new GoogleMap.CancelableCallback() {
-            @Override
-            public void onFinish() {
-                handler.postAtTime(new Runnable() {
-                    @Override
-                    public void run() {
-                        // clean up anything that might still be running
-                        handler.removeCallbacksAndMessages(playLocationHistoryAnimationToken);
-
-                        List<LatLng> points = trackingLine.getPoints();
-                        points.set(points.size()-1, currentMarker.getPosition());
-                        points.add(currentMarker.getPosition());
-                        trackingLine.setPoints(points);
-                        currentMarker.setVisible(true);
-
-                        Date nextPointDate = positionMarkers.higherKey(currentPointDate);
-                        if (nextPointDate == null || playLocationHistoryButton == null){
-                            onCancel();
-                        } else {
-                            animateToNextMarker(nextPointDate, bounds);
+    private void animatePath(final Iterator<LatLng> pointsIterator, final int index, final LatLngBounds.Builder builder) {
+        if (pointsIterator.hasNext()) {
+            partialSplinePoints.add(pointsIterator.next());
+            trackingLine.setPoints(partialSplinePoints);
+            if (index % REPLAY_PATH_SUBSTEPS == 0){
+                int trueIndex = index / REPLAY_PATH_SUBSTEPS + 1;
+                if (trueIndex < points.size()) {
+                    builder.include(points.get(trueIndex));
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 100), REPLAY_SPEED, new GoogleMap.CancelableCallback() {
+                        @Override
+                        public void onFinish() {
                         }
-                    }
-                }, playLocationHistoryAnimationToken, timeToAddNextPoint);
-            }
 
-            @Override
-            public void onCancel() {
-                handler.removeCallbacksAndMessages(playLocationHistoryAnimationToken);
-
-                for (Marker marker : positionMarkers.values()){
-                    marker.setVisible(true);
-                }
-                playLocationHistoryAnimationToken = null;
-                playLocationHistoryButton.setImageResource(R.drawable.ic_action_play);
-            }
-        });
-
-        List<LatLng> points = trackingLine.getPoints();
-        animatePathTo(playLocationHistoryAnimationToken, points.get(points.size() - 2), currentMarker.getPosition(), 0);
-    }
-
-    private void animatePathTo(final Object lerpAnimationToken, final LatLng begin, final LatLng end, final int step) {
-        double lerp = (double)step/(double)REPLAY_PATH_SUBSTEPS;
-
-        double latLerp = begin.latitude + lerp * (end.latitude - begin.latitude);
-        double lngLerp = begin.longitude + lerp * (end.longitude - begin.longitude);
-
-        List<LatLng> points = trackingLine.getPoints();
-        points.set(points.size() - 1, new LatLng(latLerp, lngLerp));
-        trackingLine.setPoints(points);
-        handler.postAtTime(new Runnable() {
-            @Override
-            public void run() {
-                if (step < REPLAY_PATH_SUBSTEPS && playLocationHistoryAnimationToken != null) {
-                    animatePathTo(lerpAnimationToken, begin, end, step + 1);
+                        @Override
+                        public void onCancel() {
+                        }
+                    });
                 }
             }
-        }, lerpAnimationToken, SystemClock.uptimeMillis() + REPLAY_SPEED / REPLAY_PATH_SUBSTEPS);
+            handler.postAtTime(new Runnable() {
+                @Override
+                public void run() {
+                    animatePath(pointsIterator, index+1, builder);
+                }
+            }, playLocationHistoryAnimationToken, SystemClock.uptimeMillis() + REPLAY_SPEED / REPLAY_PATH_SUBSTEPS);
+        } else {
+            playLocationHistoryAnimationToken = null;
+            playLocationHistoryButton.setImageResource(R.drawable.ic_action_play);
+        }
+
     }
 
-    private void fetchLocations() {
+    private void fetchWiFireLocationHistory(int taskCode) {
+        if (getActivity() == null) return;
         final Activity context = getActivity();
         BackgroundExecutor.submit(new ExternalCall<List<GPSReading>>() {
             @Override
             public List<GPSReading> submit() {
                 try {
-                    User user = Core.getDefaultClient().getLoggedInUser();
-                    Device device = FlowEntities.getInstance(context).getCurrentDevice().getDevice();
-                    DataStore gpsReadingDatastore = device.getDataStore("GPSReading");
+                    DataStore gpsReadingDatastore = FlowHelper.getInstance(context).getCurrentDevice().getDevice().getDataStore("GPSReading");
 
-                    DataStoreItems gpsReadingDatastoreItems = gpsReadingDatastore.getItems();
-                    List<GPSReading> gpsReadings = new ArrayList<>(gpsReadingDatastoreItems.size());
+                    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
+                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    String timeAgo = sdf.format(new Date(System.currentTimeMillis() - (maximumReadings * saveReadingPeriod)));
+
+                    Log.v("fetchWiFireLocationHistory", "gpsReadingDatastore.getItemsByQuery(\"@gpsreadingtime >= '\" + " + timeAgo + "+ \"'\")");
+                    DataStoreItems gpsReadingDatastoreItems = gpsReadingDatastore.getItemsByQuery("@gpsreadingtime >= '" + timeAgo + "'");
+
+                    Log.v("fetchWiFireLocationHistory", "Got " + gpsReadingDatastoreItems.size() + " entries from location history");
+
+                    List<GPSReading> gpsReadings = new ArrayList<>(Math.min(maximumReadings, gpsReadingDatastoreItems.size()));
+                    int skip = 0;
                     for (DataStoreItem dataStoreItem : gpsReadingDatastoreItems) {
-                        gpsReadings.add(new GPSReading(dataStoreItem.getContent()));
+                        if (gpsReadingDatastoreItems.size() - skip > maximumReadings) {
+                            ++skip;
+                        } else {
+                            gpsReadings.add(new GPSReading(dataStoreItem.getContent()));
+                        }
                     }
 
                     return gpsReadings;
@@ -402,7 +798,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                     return null;
                 }
             }
-        }, this, INITIAL_LOCATIONS_LOAD_EXECUTOR_ID, context);
+        }, this, taskCode, context);
     }
 
     @Override
@@ -412,24 +808,27 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                 @Override
                 public void run() {
                     updateMap(gpsReadings);
-                    if (taskCode == INITIAL_LOCATIONS_LOAD_EXECUTOR_ID){
-                        loadingInitialLocations.setVisibility(View.GONE);
-                        zoomToMarkers(positionMarkers.values());
+                    loadingInitialLocations.setVisibility(View.GONE);
+                    if (taskCode == INITIAL_LOCATIONS_LOAD_EXECUTOR_ID) {
+                        zoomToMarkers();
                     }
                 }
             });
         }
     }
 
-    private void zoomToMarkers(Collection<Marker> markers) {
+    private void zoomToMarkers() {
+        ArrayList<Marker> markers = new ArrayList<>(positionMarkers.values());
+        if (wifireCurrentLocation != null) markers.add(wifireCurrentLocation);
         LatLngBounds.Builder bounds = LatLngBounds.builder();
         for (Marker marker : markers){
             bounds.include(marker.getPosition());
         }
-        if (playLocationHistoryAnimationToken == null) {
+        if (playLocationHistoryAnimationToken == null && markers.size() > 0) {
             googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 100), new GoogleMap.CancelableCallback() {
                 @Override
                 public void onFinish() {
+                    hasZoomedToMarkers = true;
                 }
 
                 @Override
@@ -440,52 +839,65 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     }
 
     private void updateMap(List<GPSReading> gpsReadings) {
-        if (googleMap != null) {
-
-            // create new markers
+        if (googleMap != null && getActivity() != null) {
             if (gpsReadings != null) {
+
+                points = new ArrayList<>();
+                for (Marker m : positionMarkers.values()){
+                    m.remove();
+                }
+                positionMarkers.clear();
                 for (GPSReading gpsReading : gpsReadings) {
                     Date date = gpsReading.getUTCDateTime();
-                    if (!positionMarkers.containsKey(date)) {
-                        MarkerOptions markerOptions = (new MarkerOptions()
-                                .position(new LatLng(
-                                        gpsReading.getLat(),
-                                        gpsReading.getLng()))
-                                .title(gpsReading.getUTCDateTime().toString())
-                                .snippet(String.format(
-                                        "Altitude: %.1f  " +
-                                                "Speed: %.2fm/s  " +
-                                                "  " +
-                                                "Satalites: %d  " +
-                                                "HDOP: %d"
-                                        , gpsReading.getAltitude(), gpsReading.getSpeed(),
-                                        gpsReading.getSatellites(), (int) gpsReading.getHDOP()))
-                                .draggable(false));
-                        positionMarkers.put(date, googleMap.addMarker(markerOptions));
-                    }
+                    LatLng location = new LatLng(gpsReading.getLat(), gpsReading.getLng());
+                    MarkerOptions markerOptions = (new MarkerOptions()
+                            .position(location)
+                            .title(gpsReading.getUTCDateTime().toString())
+                            .snippet(String.format(
+                                    "Altitude: %.1f  " +
+                                            "Speed: %.2fm/s  " +
+                                            "  " +
+                                            "Satalites: %d  " +
+                                            "HDOP: %d"
+                                    , gpsReading.getAltitude(), gpsReading.getSpeed(),
+                                    gpsReading.getSatellites(), (int) gpsReading.getHDOP()))
+                            .draggable(false)
+                            .visible(false));
+                    positionMarkers.put(date, googleMap.addMarker(markerOptions));
+                    points.add(location);
                 }
             }
-
-            ArrayList<LatLng> points = new ArrayList<>();
 
             if (!positionMarkers.isEmpty()) {
                 // update the hues of each of the markers to show age
                 Date oldestDate = positionMarkers.firstKey();
-                Date newestDate = positionMarkers.lastKey();//new Date();
+                Date newestDate = positionMarkers.lastKey();
                 for (Map.Entry<Date, Marker> kv : positionMarkers.entrySet()) {
-                    // iterate the markers in order
                     Date date = kv.getKey();
                     Marker marker = kv.getValue();
                     marker.setIcon(
                             BitmapDescriptorFactory.defaultMarker(
+                                    // interp hue between newest and oldest
                                     getHueFromTimestamp(date, newestDate, oldestDate)
                             )
                     );
-                    points.add(marker.getPosition());
+
                 }
             }
-            trackingLine.setPoints(points);
+
+            trackingLine.setPoints(computeSplinePoints());
         }
+    }
+
+    private ArrayList<LatLng> computeSplinePoints() {
+        ArrayList<LatLng> t = new ArrayList<LatLng>();
+        if (points.size() >= 2) {
+            CatmullRomSpline c = new CatmullRomSpline(points, REPLAY_PATH_SUBSTEPS);
+            for (LatLng l : c) {
+                t.add(l);
+            }
+        }
+        return t;
     }
 
     /** Interpolate the time difference between the timestamp and now to a hue going from red to
@@ -496,12 +908,18 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private float getHueFromTimestamp(Date utcDateTime, Date newestDate, Date oldestDate) {
         long millisAgo = newestDate.getTime() - utcDateTime.getTime();
         long maxMillisAgo = Math.min(MILLIS_AGO_HUE_CEIL, newestDate.getTime() - oldestDate.getTime());
-        float lerp = Math.min(1, (float)millisAgo / (float)maxMillisAgo);
+        float lerp;
+        if (millisAgo > 0){
+            lerp = Math.min(1, (float) millisAgo / (float) maxMillisAgo);
+        } else {
+            lerp = 0;
+        }
         return (1-lerp) * 100;
     }
 
     @Override
     public void onLocationChanged(final Location location) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -517,52 +935,25 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                     myLocation.getLongitude()
             );
             if (phoneLocation == null) {
-                phoneLocation = new MarkerOptions()
+                phoneLocationOptions = new MarkerOptions()
                         .position(latlng)
                         .title("My Location")
                         .icon(BitmapDescriptorFactory.defaultMarker(MY_LOCATION_COLOR))
                         .draggable(false);
-                googleMap.addMarker(phoneLocation);
+                phoneLocation = googleMap.addMarker(phoneLocationOptions);
             } else {
-                phoneLocation.position(latlng);
+                phoneLocationOptions.position(latlng);
             }
         }
     }
 
-
-
-    /**---------------------------------- Start of command message functions -----------------------------------**/
-
-    /**
-     * Send AsyncMessage command to Flow.
-     */
-    private void sendCommandMessage(final String input) {
-        BackgroundExecutor.execute(new ExternalRun() {
-            @Override
-            public void execute() {
-                try {
-                    String command = Command.prepareCommand(input);
-                    AsyncMessage asyncMsg = flowHelper.createAsyncCommandMessage(command);
-                    boolean isAsyncMessageSent = flowHelper.postAsyncMessage(asyncMsg);
-                    if (!isAsyncMessageSent) {
-                        ActivitiesAndFragmentsHelper.showToast(appContext, R.string.message_send_other_problem, handler);
-                    }
-                } catch (FlowException e) {
-                    DebugLogger.log(getClass().getSimpleName(), e);
-                    ActivitiesAndFragmentsHelper.showToast(appContext,
-                            ErrorHtmlLogger.log(FlowEntities.getInstance(appContext).getLastError()),
-                            handler);
-                }
-            }
-        });
-    }
-
-    /**
+     /**
      * Shows Flow's response to sent async command.
      */
     @Override
     public void onAsyncMessageResponse(MessagingEvent.AsyncMessageResponse response) {
-        String responseText;
+        String responseText = null;
+        boolean success = true;
         if (getActivity() != null) {
             switch (response) {
                 case SEND_SUCCESS:
@@ -573,44 +964,50 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                     break;
                 case SENT_BUT_NOT_DELIVERED:
                     responseText = getString(R.string.response_offline);
+                    success = false;
                     break;
                 case SEND_FAILED:
                     responseText = getString(R.string.response_failed);
+                    success = false;
                     break;
                 default:
                     responseText = "";
                     break;
             }
-            // TODO
         }
+        if (!success){
+            ActivitiesAndFragmentsHelper.showFragmentChangeDialog(
+                    R.string.wifire_connectivity_problems,
+                    R.string.back_to_connected_devices,
+                    (FlowActivity) activity,
+                    SimpleFragmentFactory.createFragment(ConnectedDevicesFragment.TAG));
+        }
+        //online = success;
+        Log.v("InteractiveModeFragment.onAsyncMessageResponse", response.name() + " - " + response + " :: " + responseText);
     }
 
     @Override
     public void onTextMessageReceived(AsyncMessage msg) {
-
+         Log.v("InteractiveModeFragment.onTextMessageReceived", msg.buildXml());
     }
 
     @Override
     public void onCommandMessageReceived(AsyncMessage msg) {
-
+        Log.v("InteractiveModeFragment.onCommandMessageReceived", msg.buildXml());
     }
 
-    /**
-     * Asynchronously shows board's response to command.
-     * If command was REBOOT or REBOOT SOFTAP, it will also show a dialog
-     * forcing user to go back to connected devices screen.
-     *
-     * @param msg AsyncMessage object which can be parsed to get additional data.
-     */
     @Override
-    public void onCommandRXMessageReceived(final AsyncMessage msg) {
-        //showCommandRXMessage(msg);
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-            }
-        });
+    public void onCommandRXMessageReceived(AsyncMessage msg) {
+        Log.v("InteractiveModeFragment.onCommandRXMessageReceived", "ID: " + msg.getNode("clientid") + " - " + msg.buildXml());
+        CommandResponseHandler resp = waitingCommands.get(msg.getNode("clientid"));
+        if (resp == null) {
+            Log.w("InteractiveModeFragment.onCommandRXMessageReceived", "No response found for message " + msg.getNode("clientid"));
+        } else {
+            waitingCommands.remove(msg.getNode("clientid"));
+            if (getActivity() != null) resp.onCommandResponse(msg);
+        }
     }
+
 
     /**
      * --------------------------------- Dialog functions ----------------------------------------*
@@ -639,6 +1036,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            //online = true;
             connectionReceiver.unregister(appContext);
             if (!new WifiUtil(appContext).isInternetConnected()) {
                 ActivitiesAndFragmentsHelper.showFragmentChangeDialog(
@@ -649,4 +1047,6 @@ public class InteractiveModeFragment extends NDListeningFragment implements
             }
         }
     }
+
+
 }

@@ -248,9 +248,13 @@
     <string name="title_activity_map">Map</string>
     <string name="maps_button_text">Maps</string>
 
-    <string name="playHistoryString">Play location history</string>
-    <string name="manualSaveString">Save currernt location</string>
     <string name="playHistoryText">Play location history</string>
-    <string name="saveLocationText">Save current WiFire location</string>
+    <string name="getLocationText">Refresh current WiFire location</string>
+    <string name="gotoLocationText">Go to WiFire location</string>
+    <string name="setGeofenceButtonText">Set geofence</string>
+    <string name="setPeriodText">Set logging period</string>
+    <string name="updatePeriodString"><u>Update Period</u></string>
+    <string name="inspectPointsButtonText">Inspect Points</string>
+    <string name="wifire_connectivity_problems">Problem connecting to WiFire</string>
 
 </resources>

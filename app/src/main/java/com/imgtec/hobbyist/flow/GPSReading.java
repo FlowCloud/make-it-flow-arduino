@@ -2,6 +2,8 @@ package com.imgtec.hobbyist.flow;
 
 import android.util.Xml;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -15,10 +17,9 @@ import java.util.Date;
 /**
  * Created by simon.pinfold on 9/12/2014.
  */
-public class GPSReading {
+public class GPSReading extends LocationReading{
 
-    // no namespace
-    private static final String ns = null;
+
     private static final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
 
     private double lat;
@@ -38,102 +39,84 @@ public class GPSReading {
         parser.setInput(new StringReader(xml));
         parser.nextTag();
 
-        parser.require(XmlPullParser.START_TAG, ns, "GPSReading");
+        parser.require(XmlPullParser.START_TAG, ns, "gpsreading");
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
                 continue;
             }
             String name = parser.getName();
-            if (name.equals("GPSReadingTime")) {
-                readDateTime(parser);
-            } else if (name.equals("Location")) {
-                readLocation(parser);
-            } else if (name.equals("Satellites")){
-                readSatellites(parser);
-            } else if (name.equals("Altitude")){
-                readAltitude(parser);
-            } else if (name.equals("Speed")){
-                readSpeed(parser);
-            } else if (name.equals("Course")){
-                readCourse(parser);
-            } else if (name.equals("HDOP")){
-                readHDOP(parser);
+            if (name.equals("gpsreadingtime")) {
+                this.dateTime = readDateTime(parser);
+            } else if (name.equals("location")) {
+                LatLng location = readLocation(parser);
+                this.lat = location.latitude;
+                this.lng = location.longitude;
+            } else if (name.equals("satellites")){
+                this.satellites = readSatellites(parser);
+            } else if (name.equals("altitude")){
+                this.altitude = readAltitude(parser);
+            } else if (name.equals("speed")){
+                this.speed = readSpeed(parser);
+            } else if (name.equals("course")){
+                this.course = readCourse(parser);
+            } else if (name.equals("hdop")){
+                this.hdop = readHDOP(parser);
+            } else {
+                // ignore
+                readText(parser);
             }
         }
 
     }
 
-    private void readHDOP(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns, "HDOP");
+    private double readHDOP(XmlPullParser parser) throws IOException, XmlPullParserException {
+        double hdop;
+        parser.require(XmlPullParser.START_TAG, ns, "hdop");
         hdop = Double.parseDouble(readText(parser));
-        parser.require(XmlPullParser.END_TAG, ns, "HDOP");
+        parser.require(XmlPullParser.END_TAG, ns, "hdop");
+        return hdop;
     }
 
-    private void readCourse(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns, "Course");
+    private double readCourse(XmlPullParser parser) throws IOException, XmlPullParserException {
+        double course;
+        parser.require(XmlPullParser.START_TAG, ns, "course");
         course = Double.parseDouble(readText(parser));
-        parser.require(XmlPullParser.END_TAG, ns, "Course");
+        parser.require(XmlPullParser.END_TAG, ns, "course");
+        return course;
     }
 
-    private void readSpeed(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns, "Speed");
+    private double readSpeed(XmlPullParser parser) throws IOException, XmlPullParserException {
+        double speed;
+        parser.require(XmlPullParser.START_TAG, ns, "speed");
         speed = Double.parseDouble(readText(parser));
-        parser.require(XmlPullParser.END_TAG, ns, "Speed");
+        parser.require(XmlPullParser.END_TAG, ns, "speed");
+        return speed;
     }
 
-    private void readSatellites(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns, "Satellites");
+    private int readSatellites(XmlPullParser parser) throws IOException, XmlPullParserException {
+        int satellites;
+        parser.require(XmlPullParser.START_TAG, ns, "satellites");
         satellites = Integer.parseInt(readText(parser));
-        parser.require(XmlPullParser.END_TAG, ns, "Satellites");
+        parser.require(XmlPullParser.END_TAG, ns, "satellites");
+        return satellites;
     }
 
-    private void readAltitude(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns, "Altitude");
+    private double readAltitude(XmlPullParser parser) throws IOException, XmlPullParserException {
+        double altitude;
+        parser.require(XmlPullParser.START_TAG, ns, "altitude");
         altitude = Double.parseDouble(readText(parser));
-        parser.require(XmlPullParser.END_TAG, ns, "Altitude");
+        parser.require(XmlPullParser.END_TAG, ns, "altitude");
+        return altitude;
     }
 
 
-    private void readDateTime(XmlPullParser parser) throws IOException, XmlPullParserException, ParseException {
-        parser.require(XmlPullParser.START_TAG, ns, "GPSReadingTime");
+    private Date readDateTime(XmlPullParser parser) throws IOException, XmlPullParserException, ParseException {
+        Date dateTime;
+        parser.require(XmlPullParser.START_TAG, ns, "gpsreadingtime");
         String dateTimeString = readText(parser);
-        this.dateTime = dateFormatter.parse(dateTimeString);
-        parser.require(XmlPullParser.END_TAG, ns, "GPSReadingTime");
-    }
-
-    private void readLocation(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns, "Location");
-        while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.getEventType() != XmlPullParser.START_TAG) {
-                continue;
-            }
-            String name = parser.getName();
-            if (name.equals("Latitude")){
-                readLatitude(parser);
-            } else if (name.equals("Longitude")){
-                readLongitude(parser);
-            }
-        }
-        parser.require(XmlPullParser.END_TAG, ns, "Location");
-    }
-
-    private void readLatitude(XmlPullParser parser) throws XmlPullParserException, IOException {
-        parser.require(XmlPullParser.START_TAG, ns, "Latitude");
-        lat = Double.parseDouble(readText(parser));
-        parser.require(XmlPullParser.END_TAG, ns, "Latitude");
-    }
-
-    private void readLongitude(XmlPullParser parser) throws XmlPullParserException, IOException {
-        parser.require(XmlPullParser.START_TAG, ns, "Longitude");
-        lng = Double.parseDouble(readText(parser));
-        parser.require(XmlPullParser.END_TAG, ns, "Longitude");
-    }
-
-    private String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.next();
-        String result = parser.getText();
-        parser.nextTag();
-        return result;
+        dateTime = dateFormatter.parse(dateTimeString);
+        parser.require(XmlPullParser.END_TAG, ns, "gpsreadingtime");
+        return dateTime;
     }
 
     public double getLat() {
