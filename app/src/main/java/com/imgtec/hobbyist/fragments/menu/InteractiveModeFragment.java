@@ -102,14 +102,6 @@ import java.util.TreeMap;
 
 import at.markushi.ui.CircleButton;
 
-/**
- * Fragment used to interact with Board through Flow.
- * There are two modes: Commands and Messages.
- * Commands mode allows interacting with board by command messages.
- * Messages mode allows sending text messages to other users.
- *
- * NOTE: Messages feature is currently not available in the app. Logic is here, but ui is hidden.
- */
 public class InteractiveModeFragment extends NDListeningFragment implements
         BackgroundExecutor.Callbacks<List<GPSReading>>, GooglePlayServicesClient.ConnectionCallbacks,
         GooglePlayServicesClient.OnConnectionFailedListener,  LocationListener, AsyncMessageListener,
@@ -121,10 +113,11 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private static final int UPDATE_INTERVAL_IN_SECONDS = 5;
     private static final float MY_LOCATION_COLOR = BitmapDescriptorFactory.HUE_AZURE;
     private static final float WIFIRE_CURRENT_LOCATION = BitmapDescriptorFactory.HUE_VIOLET;
-    private static final long MILLIS_AGO_HUE_CEIL = 7 * 24 * 60 * 60 * 1000; // 7 days
+    private static final long MILLIS_AGO_HUE_CEIL = 1 * 24 * 60 * 60 * 1000; // 1 day
     private static final int REPLAY_SPEED = 50;
     private static final int REPLAY_PATH_SUBSTEPS = 50;
 
+    // must be ordered
     private static final Object[][] periodSelection = new Object[][]{
             {"30 seconds",  "15 minutes",           30  *1000, 30},
             {"1 minute",    "30 minutes",           60  *1000, 30},
@@ -161,9 +154,11 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private Button doneInspectingPointsButton;
 
     private FrameLayout periodDialog;
+    private TextView periodTextView;
+    private TextView lengthTextView;
+    private SeekBar periodSelectionBar;
 
-
-    // **************** Map components *********************
+  // **************** Map components *********************
     private GoogleMap googleMap;
 
     private Marker phoneLocation;
@@ -195,11 +190,11 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
     private Map<String, CommandResponseHandler> waitingCommands;
 
-    int saveReadingPeriod;
-    int maximumReadings;
+    private int saveReadingPeriod;
+    private int maximumReadings;
 
 
-    public static InteractiveModeFragment newInstance() {
+  public static InteractiveModeFragment newInstance() {
         return new InteractiveModeFragment();
     }
 
@@ -284,7 +279,37 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
             }
         });
-    }
+        sendCommand("GET PERIOD", null, new CommandResponseHandler() {
+          @Override
+          public void onCommandResponse(AsyncMessage response) {
+            int periodTagWidth = "<period>".length();
+            String params = response.getNode("responseparams");
+            String periodS = params.substring(periodTagWidth, params.length()-(periodTagWidth+1));
+            int period = Integer.parseInt(periodS);
+
+            final int index = Arrays.binarySearch(periodSelection, new Object[]{null, null, period, null}, new Comparator<Object[]>() {
+                @Override
+                public int compare(Object[] lhs, Object[] rhs) {
+                  return (int)lhs[2] - (int)rhs[2];
+                }
+            });
+            saveReadingPeriod = (int)periodSelection[index][2];
+            maximumReadings = (int)periodSelection[index][3];
+
+            getActivity().runOnUiThread(new Runnable() {
+              @Override
+              public void run() {
+                if (getActivity() == null) return;
+                periodSelectionBar.setProgress(index);
+                periodTextView.setText((String) periodSelection[index][0]);
+                lengthTextView.setText((String) periodSelection[index][1]);
+              }
+            });
+
+          }
+        });
+     }
+
 
     @Override
     public void onPause() {
@@ -348,9 +373,9 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private void initialiseConfigurePeriodDialog() {
         periodDialog = (FrameLayout) rootView.findViewById(R.id.periodDialog);
 
-        final TextView periodTextView = ((TextView) rootView.findViewById(R.id.periodTextView));
-        final TextView lengthTextView = ((TextView) rootView.findViewById(R.id.lengthTextView));
-        final SeekBar periodSelectionBar = ((SeekBar) rootView.findViewById(R.id.periodSelectionBar));
+        this.periodTextView = ((TextView) rootView.findViewById(R.id.periodTextView));
+        this.lengthTextView = ((TextView) rootView.findViewById(R.id.lengthTextView));
+        this.periodSelectionBar = ((SeekBar) rootView.findViewById(R.id.periodSelectionBar));
 
         periodSelectionBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -369,7 +394,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
             }
         });
 
-        setLoggingPeriod(periodSelectionBar);
+        //setLoggingPeriod(periodSelectionBar);
     }
 
     private void setLoggingPeriod(SeekBar periodSelectionBar) {
@@ -628,17 +653,17 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                 altitudeTextView.setText(String.format("%4.2f m", currentLocation.getAltitude()));
 
                 LatLng latlng = new LatLng(currentLocation.getLat(), currentLocation.getLng());
-                if (wifireCurrentLocation == null) {
-                    wifireCurrentLocationOptions = new MarkerOptions()
-                            .position(latlng)
-                            .title("WiFire Current Location")
-                            .icon(BitmapDescriptorFactory.defaultMarker(WIFIRE_CURRENT_LOCATION))
-                            .draggable(false);
-                    wifireCurrentLocation = googleMap.addMarker(wifireCurrentLocationOptions);
-                    if (!hasZoomedToMarkers) zoomToMarkers();
-                } else {
-                    wifireCurrentLocationOptions.position(latlng);
+                if (wifireCurrentLocation != null) {
+                  wifireCurrentLocation.remove();
                 }
+                wifireCurrentLocationOptions = new MarkerOptions()
+                        .position(latlng)
+                        .title("WiFire Current Location")
+                        .icon(BitmapDescriptorFactory.defaultMarker(WIFIRE_CURRENT_LOCATION))
+                        .draggable(false);
+                wifireCurrentLocation = googleMap.addMarker(wifireCurrentLocationOptions);
+                if (!hasZoomedToMarkers) zoomToMarkers();
+
             }
         });
     }
@@ -647,30 +672,30 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private void sendCommand(final String command, final String commandParams, final CommandResponseHandler onResponse) {
         final InteractiveModeFragment fthis = this;
         BackgroundExecutor.execute(new ExternalRun() {
-            @Override
-            public void execute() {
-                // createAsyncCommandMessage can create messages with duplicate request IDs
-                // if the thread switches while between increasing the current ID and assigning
-                // it to the new message
-                synchronized (fthis) {
+          @Override
+          public void execute() {
+            // createAsyncCommandMessage can create messages with duplicate request IDs
+            // if the thread switches while between increasing the current ID and assigning
+            // it to the new message
+            synchronized (fthis) {
 
                     /*if (!online) {
                         Log.v("InteractiveModeFragment.sendCommand", "Not sending command to " + command + "- device appears to be offline");
                         return;
                     }*/
 
-                    AsyncMessage message = flowHelper.createAsyncCommandMessage(command);
-                    if (commandParams != null) message.addNode("commandparams", commandParams);
+              AsyncMessage message = flowHelper.createAsyncCommandMessage(command);
+              if (commandParams != null) message.addNode("commandparams", commandParams);
 
-                    flowHelper.postAsyncMessage(message);
+              flowHelper.postAsyncMessage(message);
 
-                    waitingCommands.put(message.getRequestId(), onResponse);
-                    Log.v("InteractiveModeFragment.sendCommand", "Sent command \"" + command + "\". Request ID: " + message.getRequestId());
-                    Log.v("InteractiveModeFragment.sendCommand", message.buildXml());
+              waitingCommands.put(message.getRequestId(), onResponse);
+              Log.v("InteractiveModeFragment.sendCommand", "Sent command \"" + command + "\". Request ID: " + message.getRequestId());
+              Log.v("InteractiveModeFragment.sendCommand", message.buildXml());
 
 
-                }
             }
+          }
         });
     }
 
@@ -790,7 +815,9 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                         }
                     }
 
-                    return gpsReadings;
+
+
+                  return gpsReadings;
 
                 } catch (Exception exception) {
                     Log.e("MapActivity", exception.toString());
@@ -805,14 +832,14 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     public void onBackgroundExecutionResult(final List<GPSReading> gpsReadings, final int taskCode) {
         if (gpsReadings != null && getActivity() != null) {
             getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    updateMap(gpsReadings);
-                    loadingInitialLocations.setVisibility(View.GONE);
-                    if (taskCode == INITIAL_LOCATIONS_LOAD_EXECUTOR_ID) {
-                        zoomToMarkers();
-                    }
+              @Override
+              public void run() {
+                updateMap(gpsReadings);
+                loadingInitialLocations.setVisibility(View.GONE);
+                if (taskCode == INITIAL_LOCATIONS_LOAD_EXECUTOR_ID) {
+                  zoomToMarkers();
                 }
+              }
             });
         }
     }
@@ -862,7 +889,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                                     , gpsReading.getAltitude(), gpsReading.getSpeed(),
                                     gpsReading.getSatellites(), (int) gpsReading.getHDOP()))
                             .draggable(false)
-                            .visible(false));
+                            .visible(doneInspectingPointsButton.getVisibility() == View.VISIBLE));
                     positionMarkers.put(date, googleMap.addMarker(markerOptions));
                     points.add(location);
                 }
@@ -921,10 +948,10 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     public void onLocationChanged(final Location location) {
         if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                setMyLocation(location);
-            }
+          @Override
+          public void run() {
+            setMyLocation(location);
+          }
         });
     }
 
