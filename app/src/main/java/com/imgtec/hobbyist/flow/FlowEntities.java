@@ -61,6 +61,7 @@ public class FlowEntities {
    * Listeners which inform appropriate parts of app UI about changes in flow.
    */
   private AsyncMessageListener asyncMessageListener;
+  private AlertListener alertListener;
   private List<DevicePresenceListener> devicePresenceListeners = new ArrayList<>();
   private List<DeviceToFlowConnectionListener> deviceToFlowConnectionListeners = new ArrayList<>();
   private List<DeviceOnlineInFlowListener> deviceOnlineInFlowListeners = new ArrayList<>();
@@ -90,6 +91,14 @@ public class FlowEntities {
             case COMMAND:
               asyncMessageListener.onCommandMessageReceived(asyncMsg);
               break;
+            case ALERT:
+              new Thread(new Runnable() {
+                public void run() {
+                  if (alertListener != null) {
+                    alertListener.onAlertReceived(asyncMsg);
+                  }
+                }
+              }).start();
             case RESPONSE:
               new Thread(new Runnable() {
                 public void run() {
@@ -457,5 +466,9 @@ public class FlowEntities {
 
   public void setCurrentDevice(WifireDevice currentDevice) {
     this.currentDevice = currentDevice;
+  }
+
+  public void setAlertListener(AlertListener alertListener) {
+    this.alertListener = alertListener;
   }
 }

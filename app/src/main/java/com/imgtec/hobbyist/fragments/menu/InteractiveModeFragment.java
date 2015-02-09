@@ -15,7 +15,9 @@
 package com.imgtec.hobbyist.fragments.menu;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
@@ -60,6 +62,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.imgtec.flow.Flow;
 import com.imgtec.flow.MessagingEvent;
 import com.imgtec.flow.client.users.DataStore;
 import com.imgtec.flow.client.users.DataStoreItem;
@@ -67,9 +70,11 @@ import com.imgtec.flow.client.users.DataStoreItems;
 import com.imgtec.hobbyist.R;
 import com.imgtec.hobbyist.activities.ActivitiesAndFragmentsHelper;
 import com.imgtec.hobbyist.activities.FlowActivity;
+import com.imgtec.hobbyist.flow.AlertListener;
 import com.imgtec.hobbyist.flow.AsyncMessage;
 import com.imgtec.hobbyist.flow.AsyncMessageListener;
 import com.imgtec.hobbyist.flow.DevicePresenceListener;
+import com.imgtec.hobbyist.flow.FlowEntities;
 import com.imgtec.hobbyist.flow.FlowHelper;
 import com.imgtec.hobbyist.flow.GPSReading;
 import com.imgtec.hobbyist.flow.Geofence;
@@ -90,6 +95,9 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -105,7 +113,7 @@ import at.markushi.ui.CircleButton;
 public class InteractiveModeFragment extends NDListeningFragment implements
         BackgroundExecutor.Callbacks<List<GPSReading>>, GooglePlayServicesClient.ConnectionCallbacks,
         GooglePlayServicesClient.OnConnectionFailedListener,  LocationListener, AsyncMessageListener,
-        DevicePresenceListener {
+        DevicePresenceListener, AlertListener {
 
     // **************** Constants  *********************
     public static final String TAG = "InteractiveModeFragment";
@@ -244,6 +252,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
         flowHelper.addDevicePresenceListener(this);
         connectionReceiver = new ConnectivityReceiver(new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         connectionReceiver.register(appContext);
+
         //online = true;
         fetchWiFireLocation();
         sendCommand("GET GEOFENCE", null, new CommandResponseHandler() {
@@ -325,6 +334,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     private void initFlowHelper() {
         flowHelper = FlowHelper.getInstance(getActivity());
         flowHelper.setAsyncMessageListener(this);
+        flowHelper.setAlertListener(this);
     }
 
     public void initUI() {
@@ -602,7 +612,31 @@ public class InteractiveModeFragment extends NDListeningFragment implements
         //fetchWiFireLocation();
     }
 
-    private interface CommandResponseHandler {
+  @Override
+  public void onAlertReceived(AsyncMessage asyncMsg) {
+    if (asyncMsg.getNode("type").equals("GEOFENCE ESCAPED")) {
+      getActivity().runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          new AlertDialog.Builder(getActivity())
+                  .setTitle("Escaped Geofence")
+                  .setMessage("The GPS has been detected outside the geofence!")
+                  .setNeutralButton("OK",
+                    new DialogInterface.OnClickListener() {
+                      public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                      }
+                    })
+                  .setIcon(android.R.drawable.ic_dialog_alert)
+                  .show();
+        }
+      });
+    }
+    Log.e("onAlertReceived", asyncMsg.buildXml());
+    Log.e("onAlertReceived", asyncMsg.getNode("type"));
+  }
+
+  private interface CommandResponseHandler {
         void onCommandResponse(AsyncMessage response);
     }
     private void fetchWiFireLocation() {

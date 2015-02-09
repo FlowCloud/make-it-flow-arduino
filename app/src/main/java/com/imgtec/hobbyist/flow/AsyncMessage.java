@@ -31,7 +31,7 @@ import java.util.Map;
 public class AsyncMessage {
 
   public enum MessageType {
-    COMMAND("command"), RESPONSE("response"), MESSAGE("message"), EMPTY("");
+    COMMAND("command"), RESPONSE("response"), MESSAGE("message"), ALERT("alert"), EMPTY("");
 
     String string;
 
@@ -122,15 +122,15 @@ public class AsyncMessage {
       }
     } catch (XmlPullParserException | IOException e) {
       DebugLogger.log(getClass().getSimpleName(), "parsing xml failed");
-        e.printStackTrace();
+      e.printStackTrace();
     }
   }
 
   public void setType(MessageType type) {
-    if (type.equals(MessageType.COMMAND) || type.equals(MessageType.RESPONSE) || type.equals(MessageType.MESSAGE)) {
+    if (type.equals(MessageType.COMMAND) || type.equals(MessageType.RESPONSE) || type.equals(MessageType.MESSAGE) || type.equals(MessageType.ALERT)) {
       this.type = type;
     } else {
-      throw new IllegalArgumentException("Message must have a type of COMMAND, RESPONSE or MESSAGE");
+      throw new IllegalArgumentException("Message must have a type of COMMAND, RESPONSE, ALERT or MESSAGE");
     }
   }
 

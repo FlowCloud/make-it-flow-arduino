@@ -40,6 +40,7 @@ import com.imgtec.flow.client.users.User;
 import com.imgtec.flow.client.users.UserHelper;
 import com.imgtec.hobbyist.R;
 import com.imgtec.hobbyist.activities.ActivitiesAndFragmentsHelper;
+import com.imgtec.hobbyist.fragments.menu.InteractiveModeFragment;
 import com.imgtec.hobbyist.utils.Constants;
 import com.imgtec.hobbyist.utils.DateFormatter;
 import com.imgtec.hobbyist.utils.DebugLogger;
@@ -480,5 +481,9 @@ public class FlowHelper {
 
   public void removeDeviceOnlineInFlowListener(DeviceOnlineInFlowListener listener) {
     flowEntities.removeDeviceOnlineInFlowListener(listener);
+  }
+
+  public void setAlertListener(AlertListener alertListener) {
+    flowEntities.setAlertListener(alertListener);
   }
 }
