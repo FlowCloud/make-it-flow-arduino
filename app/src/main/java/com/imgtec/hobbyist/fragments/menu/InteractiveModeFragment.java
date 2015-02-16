@@ -30,7 +30,6 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import java.text.DateFormat;
 import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
@@ -62,7 +61,6 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.imgtec.flow.Flow;
 import com.imgtec.flow.MessagingEvent;
 import com.imgtec.flow.client.users.DataStore;
 import com.imgtec.flow.client.users.DataStoreItem;
@@ -74,7 +72,6 @@ import com.imgtec.hobbyist.flow.AlertListener;
 import com.imgtec.hobbyist.flow.AsyncMessage;
 import com.imgtec.hobbyist.flow.AsyncMessageListener;
 import com.imgtec.hobbyist.flow.DevicePresenceListener;
-import com.imgtec.hobbyist.flow.FlowEntities;
 import com.imgtec.hobbyist.flow.FlowHelper;
 import com.imgtec.hobbyist.flow.GPSReading;
 import com.imgtec.hobbyist.flow.Geofence;
@@ -96,7 +93,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -200,6 +196,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
     private int saveReadingPeriod;
     private int maximumReadings;
+    private Timer updateTimer;
 
 
   public static InteractiveModeFragment newInstance() {
@@ -231,10 +228,12 @@ public class InteractiveModeFragment extends NDListeningFragment implements
         // because we add a fragment in the XML and InteractiveModeFragment is recreated
         // each time we need to remove the map fragment
         Fragment mapFragment = fm.findFragmentById(R.id.mapFragment);
-        if (mapFragment != null) {
+        try {
+          if (mapFragment != null) {
             fm.beginTransaction().remove(mapFragment).commit();
-        }
-
+          }
+        } catch (IllegalStateException e)
+        {}
         super.onDestroyView();
     }
 
@@ -317,6 +316,15 @@ public class InteractiveModeFragment extends NDListeningFragment implements
 
           }
         });
+
+        updateTimer = new Timer();
+        updateTimer.scheduleAtFixedRate(new TimerTask() {
+          @Override
+          public void run() {
+            fetchWiFireLocation();
+            fetchWiFireLocationHistory(0);
+          }
+        }, 0, 30000);
      }
 
 
@@ -324,6 +332,14 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     public void onPause() {
         flowHelper.removeDevicePresenceListener(this);
         connectionReceiver.unregister(appContext);
+        updateTimer = new Timer();
+        updateTimer.scheduleAtFixedRate(new TimerTask() {
+          @Override
+          public void run() {
+            fetchWiFireLocation();
+            fetchWiFireLocationHistory(0);
+          }
+        }, 0, 30000);
         super.onPause();
     }
 
@@ -602,13 +618,14 @@ public class InteractiveModeFragment extends NDListeningFragment implements
         super.onStart();
         locationClient.connect();
         fetchWiFireLocationHistory(INITIAL_LOCATIONS_LOAD_EXECUTOR_ID);
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                fetchWiFireLocation();
-                fetchWiFireLocationHistory(0);
-            }
-        }, 0, 30000);
+       /* updateTimer = new Timer();
+        updateTimer.scheduleAtFixedRate(new TimerTask() {
+          @Override
+          public void run() {
+            fetchWiFireLocation();
+            fetchWiFireLocationHistory(0);
+          }
+        }, 0, 30000);*/
         //fetchWiFireLocation();
     }
 
@@ -650,7 +667,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                         String code = response.getNode("responsecode");
                         String params = response.getNode("responseparams");
 
-                        Log.v("CommandResponseHandler.onCommandResponse", "response->responseparams = \"" + params + "\"");
+                        Log.v("onCommandResponse", "response->responseparams = \"" + params + "\"");
                         if (code.equals("OK")){
                             try {
                                 GPSReading currentLocation = new GPSReading(params);
@@ -660,11 +677,11 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                                 showToast("Updated WiFire location", Toast.LENGTH_SHORT);
 
                             } catch (XmlPullParserException | IOException | ParseException e) {
-                                Log.e("CommandResponseHandler.onCommandResponse", "Error parsing GPS reading", e);
+                                Log.e("onCommandResponse", "Error parsing GPS reading", e);
                                 e.printStackTrace();
                             }
                         } else {
-                            Log.e("CommandResponseHandler.onCommandResponse", "Got response code" + code);
+                            Log.e("onCommandResponse", "Got response code" + code);
                         }
 
                     }
@@ -724,8 +741,8 @@ public class InteractiveModeFragment extends NDListeningFragment implements
               flowHelper.postAsyncMessage(message);
 
               waitingCommands.put(message.getRequestId(), onResponse);
-              Log.v("InteractiveModeFragment.sendCommand", "Sent command \"" + command + "\". Request ID: " + message.getRequestId());
-              Log.v("InteractiveModeFragment.sendCommand", message.buildXml());
+              Log.v("sendCommand", "Sent command \"" + command + "\". Request ID: " + message.getRequestId());
+              Log.v("sendCommand", message.buildXml());
 
 
             }
@@ -785,7 +802,9 @@ public class InteractiveModeFragment extends NDListeningFragment implements
             partialSplinePoints = new ArrayList<>();
             CatmullRomSpline c = new CatmullRomSpline(points, REPLAY_PATH_SUBSTEPS);
 
-            animatePath(c.iterator(), 0, LatLngBounds.builder());
+            LatLngBounds.Builder builder = LatLngBounds.builder();
+            if (!points.isEmpty()) builder.include(points.get(0));
+            animatePath(c.iterator(), 0, builder);
         }
     }
 
@@ -834,10 +853,10 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String timeAgo = sdf.format(new Date(System.currentTimeMillis() - (maximumReadings * saveReadingPeriod)));
 
-                    Log.v("fetchWiFireLocationHistory", "gpsReadingDatastore.getItemsByQuery(\"@gpsreadingtime >= '\" + " + timeAgo + "+ \"'\")");
+                    Log.v("fetchWiFi...History", "gpsReadingDatastore.getItemsByQuery(\"@gpsreadingtime >= '\" + " + timeAgo + "+ \"'\")");
                     DataStoreItems gpsReadingDatastoreItems = gpsReadingDatastore.getItemsByQuery("@gpsreadingtime >= '" + timeAgo + "'");
 
-                    Log.v("fetchWiFireLocationHistory", "Got " + gpsReadingDatastoreItems.size() + " entries from location history");
+                    Log.v("fetchWiFi...History", "Got " + gpsReadingDatastoreItems.size() + " entries from location history");
 
                     List<GPSReading> gpsReadings = new ArrayList<>(Math.min(maximumReadings, gpsReadingDatastoreItems.size()));
                     int skip = 0;
@@ -849,6 +868,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                         }
                     }
 
+                    Log.v("fetchWiFi...History", "Down to " + gpsReadings.size() + " / " + maximumReadings + " entries from location history");
 
 
                   return gpsReadings;
@@ -1037,6 +1057,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
             }
         }
         if (!success){
+            updateTimer.cancel();
             ActivitiesAndFragmentsHelper.showFragmentChangeDialog(
                     R.string.wifire_connectivity_problems,
                     R.string.back_to_connected_devices,
@@ -1044,25 +1065,23 @@ public class InteractiveModeFragment extends NDListeningFragment implements
                     SimpleFragmentFactory.createFragment(ConnectedDevicesFragment.TAG));
         }
         //online = success;
-        Log.v("InteractiveModeFragment.onAsyncMessageResponse", response.name() + " - " + response + " :: " + responseText);
+        Log.v("onAsyncMessageResponse", response.name() + " - " + response + " :: " + responseText);
     }
 
     @Override
     public void onTextMessageReceived(AsyncMessage msg) {
-         Log.v("InteractiveModeFragment.onTextMessageReceived", msg.buildXml());
+         Log.v("onTextMessageReceived", msg.buildXml());
     }
 
     @Override
     public void onCommandMessageReceived(AsyncMessage msg) {
-        Log.v("InteractiveModeFragment.onCommandMessageReceived", msg.buildXml());
     }
 
     @Override
     public void onCommandRXMessageReceived(AsyncMessage msg) {
-        Log.v("InteractiveModeFragment.onCommandRXMessageReceived", "ID: " + msg.getNode("clientid") + " - " + msg.buildXml());
         CommandResponseHandler resp = waitingCommands.get(msg.getNode("clientid"));
         if (resp == null) {
-            Log.w("InteractiveModeFragment.onCommandRXMessageReceived", "No response found for message " + msg.getNode("clientid"));
+            Log.w("onCommandRXMe...ved", "No response found for message " + msg.getNode("clientid"));
         } else {
             waitingCommands.remove(msg.getNode("clientid"));
             if (getActivity() != null) resp.onCommandResponse(msg);
@@ -1077,6 +1096,7 @@ public class InteractiveModeFragment extends NDListeningFragment implements
     @Override
     public void onDevicePresenceChangeListener(boolean isConnected) {
         if (!isConnected) {
+            updateTimer.cancel();
             showConnectedDevicesFragmentDialog(SimpleFragmentFactory.createFragment(ConnectedDevicesFragment.TAG));
         }
     }
