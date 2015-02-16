@@ -17,6 +17,7 @@ package com.imgtec.hobbyist.flow;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import com.imgtec.flow.Flow;
 import com.imgtec.flow.FlowHandler;
@@ -81,6 +82,7 @@ public class FlowEntities {
       public void handleMessage(Message msg) {
         super.handleMessage(msg);
         String content = ((MessagingEvent) msg.obj).content;
+        content = content.substring(0, content.lastIndexOf('>')+1);
         final AsyncMessage asyncMsg = AsyncMessage.newInstance(AsyncMessage.MessageType.RESPONSE, null);
         asyncMsg.setNodesFromXml(content);
         if (asyncMessageListener != null) {
@@ -92,6 +94,7 @@ public class FlowEntities {
               asyncMessageListener.onCommandMessageReceived(asyncMsg);
               break;
             case ALERT:
+              Log.e("initUserAsyncHandler", ""+alertListener);
               new Thread(new Runnable() {
                 public void run() {
                   if (alertListener != null) {
@@ -151,6 +154,7 @@ public class FlowEntities {
           try {
             factory = XmlPullParserFactory.newInstance();
             xpp = factory.newPullParser();
+            content = content.substring(0, content.lastIndexOf('>') + 1);
             xpp.setInput(new StringReader(content));
             int eventType = xpp.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
@@ -200,6 +204,8 @@ public class FlowEntities {
             }
           } catch (XmlPullParserException | IOException e) {
             DebugLogger.log(getClass().getSimpleName(), "parsing device presence xml failed");
+            e.printStackTrace();
+            Log.e(getClass().getSimpleName(), content);
           }
         }
       }
@@ -434,6 +440,8 @@ public class FlowEntities {
     flowInstance.subscribe(getUserFlowHandler(), getUserAor(),
         MessagingEvent.MessagingEventCategory.FLOW_MESSAGING_EVENTCATEGORY_ASYNC_MESSAGE_RESPONSE,
         "", 1200, asyncResponseHandler);
+
+
   }
 
   /**
