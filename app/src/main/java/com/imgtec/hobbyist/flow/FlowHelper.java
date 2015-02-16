@@ -420,7 +420,7 @@ public class FlowHelper {
    */
   public AsyncMessage createAsyncCommandMessage(String commandString) {
     AsyncMessage asyncMsg = AsyncMessage.newInstance(AsyncMessage.MessageType.COMMAND, null);
-    asyncMsg.addNode(AsyncMessageNodeKeys.SENT_WITH_TYPE_INFO, DateFormatter.fromCalendar(GregorianCalendar.getInstance()));
+    asyncMsg.addNode(AsyncMessageNodeKeys.SENT_WITH_TYPE_INFO, DateFormatter.fromCalendarUTC(GregorianCalendar.getInstance()));
     asyncMsg.addNode(AsyncMessageNodeKeys.TO, getCurrentDevice().getAor());
     asyncMsg.addNode(AsyncMessageNodeKeys.FROM, getUserAor());
     asyncMsg.addNode(AsyncMessageNodeKeys.CLIENTID, getUserId());

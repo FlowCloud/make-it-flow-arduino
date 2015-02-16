@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Handles transitions between {@link java.util.Date} objects and Strings and vice versa.
@@ -37,6 +38,13 @@ public final class DateFormatter {
   public static String fromCalendar(final Calendar calendar) {
     Date date = calendar.getTime();
     return new SimpleDateFormat(FLOW_DATE_FORMAT).format(date);
+  }
+
+  public static String fromCalendarUTC(Calendar calendar) {
+    Date date = calendar.getTime();
+    SimpleDateFormat sdf = new SimpleDateFormat(FLOW_DATE_FORMAT);
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    return sdf.format(date);
   }
 
   /**
